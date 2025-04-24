@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "luck-block-cobblemon",
+	"version": "${version}",
+	"name": "Luck Block Cobblemon",
+	"description": "This a mod to test your luck",
+	"authors": [
+		"SLIM"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/luck-block-cobblemon/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.crulim.mod.LuckBlockCobblemon"
+		],
+		"fabric-datagen": [
+			"net.crulim.mod.LuckBlockCobblemonDataGenerator"
+		],
+		"client": [
+			"net.crulim.mod.LuckBlockCobblemonClient"
+		]
+	},
+	"mixins": [
+		"luck-block-cobblemon.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.13",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
