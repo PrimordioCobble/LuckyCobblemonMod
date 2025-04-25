@@ -1,4 +1,4 @@
-package net.crulim.mod;
+package net.crulim.luckblockcobblemon;
 
 import net.fabricmc.api.ClientModInitializer;
 

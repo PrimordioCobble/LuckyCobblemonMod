@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "net.crulim.mod.mixin",
+	"package": "net.crulim.luckblockcobblemon.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ExampleMixin"
