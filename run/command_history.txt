@@ -1,0 +1,11 @@
+/time set day
+/gamerule doDaylightCycle false
+/difficulty hard
+/kill @e
+/place structure minecraft:ruined_portal ~ ~ ~
+/function luckmod:spawn_tnt_circle
+/gamerule doDaylightCycle false
+/time set day
+/pokegive infernape
+/luckblock reload
+/luckyblock reload

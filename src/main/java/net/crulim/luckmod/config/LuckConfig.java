@@ -1,54 +1,91 @@
-
 package net.crulim.luckmod.config;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import net.fabricmc.loader.api.FabricLoader;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LuckConfig {
-    public static List<LuckEntry> luckPool;
+    public static List<LuckPoolEntry> luckPool = new ArrayList<>();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final String CONFIG_PATH = "./config/luck_config.json";
 
     public static void load() {
-        Path path = FabricLoader.getInstance().getConfigDir().resolve("luckmod/config.json");
         try {
-            if (!Files.exists(path)) {
-                Files.createDirectories(path.getParent());
-                System.err.println("[LuckMod] Config file not found at " + path + ". Please create it manually.");
-                return;
+            File file = new File(CONFIG_PATH);
+            if (!file.exists()) {
+                generateDefaultConfig(file);
             }
-            String json = Files.readString(path);
-            Type type = new TypeToken<ConfigWrapper>(){}.getType();
-            ConfigWrapper wrapper = new Gson().fromJson(json, type);
-            luckPool = wrapper.luckPool;
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            JsonObject json = JsonParser.parseReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)).getAsJsonObject();
+            luckPool.clear();
+
+            JsonArray poolArray = json.getAsJsonArray("luckPool");
+            for (var element : poolArray) {
+                JsonObject obj = element.getAsJsonObject();
+                String id = obj.get("id").getAsString();
+                int min = obj.get("min").getAsInt();
+                int max = obj.get("max").getAsInt();
+                luckPool.add(new LuckPoolEntry(id, min, max));
+            }
+
+            System.out.println("[LuckMod] Luck config loaded successfully.");
+        } catch (Exception e) {
+            System.out.println("[LuckMod] Failed to load config: " + e.getMessage());
         }
     }
 
+    private static void generateDefaultConfig(File file) {
+        try {
+            JsonObject defaultConfig = new JsonObject();
 
+            JsonArray poolArray = new JsonArray();
+            poolArray.add(createDropItem("minecraft:diamond", 1, 3));
+            poolArray.add(createDropItem("minecraft:emerald", 2, 4));
+            poolArray.add(createDropItem("minecraft:golden_apple", 1, 1));
+            poolArray.add(createDropItem("minecraft:ender_pearl", 4, 8));
+            poolArray.add(createDropItem("minecraft:tnt", 5, 10));
+            defaultConfig.add("luckPool", poolArray);
 
-    public static class ConfigWrapper {
-        public List<LuckEntry> luckPool;
+            File configDir = new File("./config");
+            if (!configDir.exists()) configDir.mkdirs();
+
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+                GSON.toJson(defaultConfig, writer);
+            }
+
+            System.out.println("[LuckMod] Default luck config created.");
+        } catch (Exception e) {
+            System.out.println("[LuckMod] Failed to create default config: " + e.getMessage());
+        }
     }
 
-    public static class LuckEntry {
-        public String type;
-        public String item;
-        public int amount;
-        public String command;
-        public double chance;
-
-
-        public double power;
-        public List<String> effects;
-        public int duration;
-        public int amplifier;
+    private static JsonObject createDropItem(String id, int min, int max) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("id", id);
+        obj.addProperty("min", min);
+        obj.addProperty("max", max);
+        return obj;
     }
 
+    public static class LuckPoolEntry {
+        public final String id;
+        public final int min;
+        public final int max;
+
+        public LuckPoolEntry(String id, int min, int max) {
+            this.id = id;
+            this.min = min;
+            this.max = max;
+        }
+    }
 }

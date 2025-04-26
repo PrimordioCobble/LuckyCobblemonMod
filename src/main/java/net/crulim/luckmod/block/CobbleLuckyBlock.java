@@ -16,7 +16,6 @@ public class CobbleLuckyBlock extends Block {
                 .sounds(BlockSoundGroup.AMETHYST_BLOCK));
     }
 
-    @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
         if (!world.isClient && world instanceof ServerWorld serverWorld) {
             CobbleLuckyBlockHandler.handleLuck(serverWorld, pos);
