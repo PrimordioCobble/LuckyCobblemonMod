@@ -4,24 +4,16 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import net.minecraft.block.Block;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
-import com.google.gson.GsonBuilder;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -37,12 +29,11 @@ public class CobbleLuckyBlockHandler {
     private static int shinyChancePercent = 5;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
     private static final String CONFIG_PATH = "config/luck_cobble_config.json";
 
     public static void loadConfig() {
         try {
-            File file = new File("./config/luck_cobble_config.json");
+            File file = new File(CONFIG_PATH);
             if (!file.exists()) {
                 generateDefaultConfig(file);
             }
@@ -53,7 +44,6 @@ public class CobbleLuckyBlockHandler {
             cobblemonItems.clear();
             pokemons.clear();
 
-            // Carrega normalmente
             JsonArray mcItems = json.getAsJsonArray("minecraftItems");
             for (var element : mcItems) {
                 JsonObject obj = element.getAsJsonObject();
@@ -74,27 +64,88 @@ public class CobbleLuckyBlockHandler {
             JsonObject levelRange = json.getAsJsonObject("levelRange");
             minLevel = levelRange.get("min").getAsInt();
             maxLevel = levelRange.get("max").getAsInt();
-
             shinyChancePercent = json.get("shinyChancePercent").getAsInt();
 
-            System.out.println("[LuckyBlock] Config loaded successfully.");
+            System.out.println("[CobbleLuckyBlock] Config loaded successfully.");
 
         } catch (Exception e) {
-            System.out.println("[LuckyBlock] Failed to load config: " + e.getMessage());
+            System.out.println("[CobbleLuckyBlock] Failed to load config: " + e.getMessage());
         }
     }
 
-
     public static void reloadConfig() {
         loadConfig();
-        System.out.println("[LuckyBlock] Config reloaded!");
+        System.out.println("[CobbleLuckyBlock] Config reloaded!");
+    }
+
+    public static void handleLuck(ServerWorld world, BlockPos pos) {
+        List<String> validTypes = new ArrayList<>();
+        if (!minecraftItems.isEmpty()) validTypes.add("minecraft");
+        if (!cobblemonItems.isEmpty()) validTypes.add("cobblemon");
+        if (!pokemons.isEmpty()) validTypes.add("pokemon");
+
+        if (validTypes.isEmpty()) {
+            System.out.println("[CobbleLuckyBlock] Warning: No valid drops configured!");
+            return;
+        }
+
+        Random random = world.getRandom();
+        String selectedType = validTypes.get(random.nextInt(validTypes.size()));
+
+        switch (selectedType) {
+            case "minecraft" -> dropMinecraftItem(world, pos);
+            case "cobblemon" -> dropCobblemonItem(world, pos);
+            case "pokemon" -> spawnPokemon(world, pos);
+            default -> System.out.println("[CobbleLuckyBlock] Unknown drop type selected!");
+        }
+    }
+
+    private static void dropMinecraftItem(ServerWorld world, BlockPos pos) {
+        Random random = world.getRandom();
+        DropItem drop = minecraftItems.get(random.nextInt(minecraftItems.size()));
+        Item item = Registries.ITEM.get(Identifier.of(drop.id));
+        ItemStack stack = new ItemStack(item, random.nextBetween(drop.min, drop.max));
+        Block.dropStack(world, pos.up(), stack);
+    }
+
+    private static void dropCobblemonItem(ServerWorld world, BlockPos pos) {
+        Random random = world.getRandom();
+        DropItem drop = cobblemonItems.get(random.nextInt(cobblemonItems.size()));
+        Item item = Registries.ITEM.get(Identifier.of(drop.id));
+        ItemStack stack = new ItemStack(item, random.nextBetween(drop.min, drop.max));
+        Block.dropStack(world, pos.up(), stack);
+    }
+
+    private static void spawnPokemon(ServerWorld world, BlockPos pos) {
+        Random random = world.getRandom();
+        String speciesName = pokemons.get(random.nextInt(pokemons.size()));
+
+        Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
+        if (species == null) {
+            System.out.println("[CobbleLuckyBlock] Species not found: " + speciesName);
+            return;
+        }
+
+        Pokemon pokemon = new Pokemon();
+        pokemon.setSpecies(species);
+        pokemon.setLevel(random.nextBetween(minLevel, maxLevel));
+
+        if (random.nextInt(100) < shinyChancePercent) {
+            pokemon.setShiny(true);
+        }
+
+        Vec3d spawnPos = new Vec3d(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5);
+        PokemonEntity entity = pokemon.sendOut(world, spawnPos, null, e -> null);
+
+        if (entity == null) {
+            System.out.println("[CobbleLuckyBlock] Failed to spawn Pokémon: " + speciesName);
+        }
     }
 
     private static void generateDefaultConfig(File file) {
         try {
             JsonObject defaultConfig = new JsonObject();
 
-            // Explicações para o usuário
             defaultConfig.addProperty("_info_minecraftItems", "Minecraft item drops: id = item ID, min = minimum quantity, max = maximum quantity");
             JsonArray minecraftItems = new JsonArray();
             minecraftItems.add(createDropItem("minecraft:diamond", 1, 3));
@@ -112,19 +163,317 @@ public class CobbleLuckyBlockHandler {
 
             defaultConfig.addProperty("_info_pokemons", "List of Pokémon species names that can spawn (example: eevee, charmander, dratini)");
             JsonArray pokemons = new JsonArray();
-            pokemons.add("eevee");
+            pokemons.add("bulbasaur");
+            pokemons.add("ivysaur");
+            pokemons.add("venusaur");
             pokemons.add("charmander");
+            pokemons.add("charmeleon");
+            pokemons.add("charizard");
+            pokemons.add("squirtle");
+            pokemons.add("wartortle");
+            pokemons.add("blastoise");
+            pokemons.add("caterpie");
+            pokemons.add("metapod");
+            pokemons.add("butterfree");
+            pokemons.add("weedle");
+            pokemons.add("kakuna");
+            pokemons.add("beedrill");
+            pokemons.add("pidgey");
+            pokemons.add("pidgeotto");
+            pokemons.add("pidgeot");
+            pokemons.add("rattata");
+            pokemons.add("raticate");
+            pokemons.add("spearow");
+            pokemons.add("fearow");
+            pokemons.add("ekans");
+            pokemons.add("arbok");
             pokemons.add("pikachu");
+            pokemons.add("raichu");
+            pokemons.add("sandshrew");
+            pokemons.add("sandslash");
+            pokemons.add("nidoran_f");
+            pokemons.add("nidorina");
+            pokemons.add("nidoqueen");
+            pokemons.add("nidoran_m");
+            pokemons.add("nidorino");
+            pokemons.add("nidoking");
+            pokemons.add("clefairy");
+            pokemons.add("clefable");
+            pokemons.add("vulpix");
+            pokemons.add("ninetales");
+            pokemons.add("jigglypuff");
+            pokemons.add("wigglytuff");
+            pokemons.add("zubat");
+            pokemons.add("golbat");
+            pokemons.add("oddish");
+            pokemons.add("gloom");
+            pokemons.add("vileplume");
+            pokemons.add("paras");
+            pokemons.add("parasect");
+            pokemons.add("venonat");
+            pokemons.add("venomoth");
+            pokemons.add("diglett");
+            pokemons.add("dugtrio");
+            pokemons.add("meowth");
+            pokemons.add("persian");
+            pokemons.add("psyduck");
+            pokemons.add("golduck");
+            pokemons.add("mankey");
+            pokemons.add("primeape");
+            pokemons.add("growlithe");
+            pokemons.add("arcanine");
+            pokemons.add("poliwag");
+            pokemons.add("poliwhirl");
+            pokemons.add("poliwrath");
+            pokemons.add("abra");
+            pokemons.add("kadabra");
+            pokemons.add("alakazam");
+            pokemons.add("machop");
+            pokemons.add("machoke");
+            pokemons.add("machamp");
+            pokemons.add("bellsprout");
+            pokemons.add("weepinbell");
+            pokemons.add("victreebel");
+            pokemons.add("tentacool");
+            pokemons.add("tentacruel");
+            pokemons.add("geodude");
+            pokemons.add("graveler");
+            pokemons.add("golem");
+            pokemons.add("ponyta");
+            pokemons.add("rapidash");
+            pokemons.add("slowpoke");
+            pokemons.add("slowbro");
+            pokemons.add("magnemite");
+            pokemons.add("magneton");
+            pokemons.add("farfetchd");
+            pokemons.add("doduo");
+            pokemons.add("dodrio");
+            pokemons.add("seel");
+            pokemons.add("dewgong");
+            pokemons.add("grimer");
+            pokemons.add("muk");
+            pokemons.add("shellder");
+            pokemons.add("cloyster");
+            pokemons.add("gastly");
+            pokemons.add("haunter");
+            pokemons.add("gengar");
+            pokemons.add("onix");
+            pokemons.add("drowzee");
+            pokemons.add("hypno");
+            pokemons.add("krabby");
+            pokemons.add("kingler");
+            pokemons.add("voltorb");
+            pokemons.add("electrode");
+            pokemons.add("exeggcute");
+            pokemons.add("exeggutor");
+            pokemons.add("cubone");
+            pokemons.add("marowak");
+            pokemons.add("hitmonlee");
+            pokemons.add("hitmonchan");
+            pokemons.add("lickitung");
+            pokemons.add("koffing");
+            pokemons.add("weezing");
+            pokemons.add("rhyhorn");
+            pokemons.add("rhydon");
+            pokemons.add("chansey");
+            pokemons.add("tangela");
+            pokemons.add("kangaskhan");
+            pokemons.add("horsea");
+            pokemons.add("seadra");
+            pokemons.add("goldeen");
+            pokemons.add("seaking");
+            pokemons.add("staryu");
+            pokemons.add("starmie");
+            pokemons.add("mr_mime");
+            pokemons.add("scyther");
+            pokemons.add("jynx");
+            pokemons.add("electabuzz");
+            pokemons.add("magmar");
+            pokemons.add("pinsir");
+            pokemons.add("tauros");
+            pokemons.add("magikarp");
+            pokemons.add("gyarados");
+            pokemons.add("lapras");
+            pokemons.add("ditto");
+            pokemons.add("eevee");
+            pokemons.add("vaporeon");
+            pokemons.add("jolteon");
+            pokemons.add("flareon");
+            pokemons.add("porygon");
+            pokemons.add("omanyte");
+            pokemons.add("omastar");
+            pokemons.add("kabuto");
+            pokemons.add("kabutops");
+            pokemons.add("aerodactyl");
+            pokemons.add("snorlax");
+            pokemons.add("articuno");
+            pokemons.add("zapdos");
+            pokemons.add("moltres");
             pokemons.add("dratini");
+            pokemons.add("dragonair");
+            pokemons.add("dragonite");
+            pokemons.add("mewtwo");
+            pokemons.add("mew");
+            pokemons.add("bulbasaur");
+            pokemons.add("ivysaur");
+            pokemons.add("venusaur");
+            pokemons.add("charmander");
+            pokemons.add("charmeleon");
+            pokemons.add("charizard");
+            pokemons.add("squirtle");
+            pokemons.add("wartortle");
+            pokemons.add("blastoise");
+            pokemons.add("caterpie");
+            pokemons.add("metapod");
+            pokemons.add("butterfree");
+            pokemons.add("weedle");
+            pokemons.add("kakuna");
+            pokemons.add("beedrill");
+            pokemons.add("pidgey");
+            pokemons.add("pidgeotto");
+            pokemons.add("pidgeot");
+            pokemons.add("rattata");
+            pokemons.add("raticate");
+            pokemons.add("spearow");
+            pokemons.add("fearow");
+            pokemons.add("ekans");
+            pokemons.add("arbok");
+            pokemons.add("pikachu");
+            pokemons.add("raichu");
+            pokemons.add("sandshrew");
+            pokemons.add("sandslash");
+            pokemons.add("nidoran_f");
+            pokemons.add("nidorina");
+            pokemons.add("nidoqueen");
+            pokemons.add("nidoran_m");
+            pokemons.add("nidorino");
+            pokemons.add("nidoking");
+            pokemons.add("clefairy");
+            pokemons.add("clefable");
+            pokemons.add("vulpix");
+            pokemons.add("ninetales");
+            pokemons.add("jigglypuff");
+            pokemons.add("wigglytuff");
+            pokemons.add("zubat");
+            pokemons.add("golbat");
+            pokemons.add("oddish");
+            pokemons.add("gloom");
+            pokemons.add("vileplume");
+            pokemons.add("paras");
+            pokemons.add("parasect");
+            pokemons.add("venonat");
+            pokemons.add("venomoth");
+            pokemons.add("diglett");
+            pokemons.add("dugtrio");
+            pokemons.add("meowth");
+            pokemons.add("persian");
+            pokemons.add("psyduck");
+            pokemons.add("golduck");
+            pokemons.add("mankey");
+            pokemons.add("primeape");
+            pokemons.add("growlithe");
+            pokemons.add("arcanine");
+            pokemons.add("poliwag");
+            pokemons.add("poliwhirl");
+            pokemons.add("poliwrath");
+            pokemons.add("abra");
+            pokemons.add("kadabra");
+            pokemons.add("alakazam");
+            pokemons.add("machop");
+            pokemons.add("machoke");
+            pokemons.add("machamp");
+            pokemons.add("bellsprout");
+            pokemons.add("weepinbell");
+            pokemons.add("victreebel");
+            pokemons.add("tentacool");
+            pokemons.add("tentacruel");
+            pokemons.add("geodude");
+            pokemons.add("graveler");
+            pokemons.add("golem");
+            pokemons.add("ponyta");
+            pokemons.add("rapidash");
+            pokemons.add("slowpoke");
+            pokemons.add("slowbro");
+            pokemons.add("magnemite");
+            pokemons.add("magneton");
+            pokemons.add("farfetchd");
+            pokemons.add("doduo");
+            pokemons.add("dodrio");
+            pokemons.add("seel");
+            pokemons.add("dewgong");
+            pokemons.add("grimer");
+            pokemons.add("muk");
+            pokemons.add("shellder");
+            pokemons.add("cloyster");
+            pokemons.add("gastly");
+            pokemons.add("haunter");
+            pokemons.add("gengar");
+            pokemons.add("onix");
+            pokemons.add("drowzee");
+            pokemons.add("hypno");
+            pokemons.add("krabby");
+            pokemons.add("kingler");
+            pokemons.add("voltorb");
+            pokemons.add("electrode");
+            pokemons.add("exeggcute");
+            pokemons.add("exeggutor");
+            pokemons.add("cubone");
+            pokemons.add("marowak");
+            pokemons.add("hitmonlee");
+            pokemons.add("hitmonchan");
+            pokemons.add("lickitung");
+            pokemons.add("koffing");
+            pokemons.add("weezing");
+            pokemons.add("rhyhorn");
+            pokemons.add("rhydon");
+            pokemons.add("chansey");
+            pokemons.add("tangela");
+            pokemons.add("kangaskhan");
+            pokemons.add("horsea");
+            pokemons.add("seadra");
+            pokemons.add("goldeen");
+            pokemons.add("seaking");
+            pokemons.add("staryu");
+            pokemons.add("starmie");
+            pokemons.add("mr_mime");
+            pokemons.add("scyther");
+            pokemons.add("jynx");
+            pokemons.add("electabuzz");
+            pokemons.add("magmar");
+            pokemons.add("pinsir");
+            pokemons.add("tauros");
+            pokemons.add("magikarp");
+            pokemons.add("gyarados");
+            pokemons.add("lapras");
+            pokemons.add("ditto");
+            pokemons.add("eevee");
+            pokemons.add("vaporeon");
+            pokemons.add("jolteon");
+            pokemons.add("flareon");
+            pokemons.add("porygon");
+            pokemons.add("omanyte");
+            pokemons.add("omastar");
+            pokemons.add("kabuto");
+            pokemons.add("kabutops");
+            pokemons.add("aerodactyl");
+            pokemons.add("snorlax");
+            pokemons.add("articuno");
+            pokemons.add("zapdos");
+            pokemons.add("moltres");
+            pokemons.add("dratini");
+            pokemons.add("dragonair");
+            pokemons.add("dragonite");
+            pokemons.add("mewtwo");
+            pokemons.add("mew");
+
             defaultConfig.add("pokemons", pokemons);
 
-            defaultConfig.addProperty("_info_levelRange", "Defines minimum and maximum levels for Pokémon that spawn");
             JsonObject levelRange = new JsonObject();
             levelRange.addProperty("min", 5);
             levelRange.addProperty("max", 30);
             defaultConfig.add("levelRange", levelRange);
 
-            defaultConfig.addProperty("_info_shinyChancePercent", "Percentage chance for a spawned Pokémon to be shiny");
+            defaultConfig.addProperty("_info_shinyChancePercent", "Chance (%) for the Pokémon to be shiny.");
             defaultConfig.addProperty("shinyChancePercent", 5);
 
             File configDir = new File("./config");
@@ -134,14 +483,12 @@ public class CobbleLuckyBlockHandler {
                 GSON.toJson(defaultConfig, writer);
             }
 
-            System.out.println("[LuckyBlock] Default config example with explanations created.");
+            System.out.println("[CobbleLuckyBlock] Default config created.");
+
         } catch (Exception e) {
-            System.out.println("[LuckyBlock] Failed to create default config: " + e.getMessage());
+            System.out.println("[CobbleLuckyBlock] Failed to create default config: " + e.getMessage());
         }
     }
-
-
-
 
     private static JsonObject createDropItem(String id, int min, int max) {
         JsonObject obj = new JsonObject();
@@ -149,69 +496,6 @@ public class CobbleLuckyBlockHandler {
         obj.addProperty("min", min);
         obj.addProperty("max", max);
         return obj;
-    }
-
-    public static void handleLuck(ServerWorld world, BlockPos pos) {
-        if (minecraftItems.isEmpty() && cobblemonItems.isEmpty() && pokemons.isEmpty()) {
-            System.out.println("[LuckyBlock] Warning: No drops configured!");
-            return;
-        }
-
-        Random random = world.getRandom();
-        int event = random.nextInt(3); // 0 = Minecraft item, 1 = Cobblemon item, 2 = Pokémon
-
-        if (event == 0 && !minecraftItems.isEmpty()) {
-            dropMinecraftItem(world, pos);
-        } else if (event == 1 && !cobblemonItems.isEmpty()) {
-            dropCobblemonItem(world, pos);
-        } else if (event == 2 && !pokemons.isEmpty()) {
-            spawnPokemon(world, pos);
-        } else {
-            System.out.println("[LuckyBlock] No valid drop for event " + event);
-        }
-    }
-
-
-    private static void dropMinecraftItem(ServerWorld world, BlockPos pos) {
-        Random random = world.getRandom();
-        DropItem drop = minecraftItems.get(random.nextInt(minecraftItems.size()));
-        Item item = Registries.ITEM.get(Identifier.of(drop.id));
-        ItemStack stack = new ItemStack(item, random.nextBetween(drop.min, drop.max));
-        Block.dropStack(world, pos, stack);
-    }
-
-    private static void dropCobblemonItem(ServerWorld world, BlockPos pos) {
-        Random random = world.getRandom();
-        DropItem drop = cobblemonItems.get(random.nextInt(cobblemonItems.size()));
-        Item item = Registries.ITEM.get(Identifier.of(drop.id));
-        ItemStack stack = new ItemStack(item, random.nextBetween(drop.min, drop.max));
-        Block.dropStack(world, pos, stack);
-    }
-
-    private static void spawnPokemon(ServerWorld world, BlockPos pos) {
-        Random random = world.getRandom();
-        String speciesName = pokemons.get(random.nextInt(pokemons.size()));
-
-        Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
-        if (species == null) {
-            System.out.println("[LuckyBlock] Species not found: " + speciesName);
-            return;
-        }
-
-        Pokemon pokemon = new Pokemon();
-        pokemon.setSpecies(species);
-        pokemon.setLevel(random.nextBetween(minLevel, maxLevel));
-
-        if (random.nextInt(100) < shinyChancePercent) {
-            pokemon.setShiny(true);
-        }
-
-        Vec3d spawnPos = new Vec3d(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5);
-        PokemonEntity entity = pokemon.sendOut(world, spawnPos, null, e -> null);
-
-        if (entity == null) {
-            System.out.println("[LuckyBlock] Failed to spawn Pokémon: " + speciesName);
-        }
     }
 
     private static class DropItem {
