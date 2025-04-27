@@ -10,3 +10,4 @@
 /luckblock reload
 /luckyblock reload
 /tp 10000 100 -10000
+/luckyblock reload

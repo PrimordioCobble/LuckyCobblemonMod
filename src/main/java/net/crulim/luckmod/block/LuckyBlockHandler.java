@@ -13,6 +13,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
@@ -83,25 +84,59 @@ public class LuckyBlockHandler {
         List<JsonObject> valid = new ArrayList<>();
 
         for (JsonObject event : luckPool) {
+            if (event == null || event.isJsonNull()) {
+                continue; // Pula se for nulo
+            }
+
+            if (!event.has("type")) {
+                continue; // Pula se não tiver tipo
+            }
+
             String type = event.get("type").getAsString();
+
             switch (type) {
                 case "item" -> {
-                    JsonArray items = event.getAsJsonArray("items");
-                    if (items != null && !items.isEmpty()) valid.add(event);
+                    if (event.has("items")) {
+                        JsonArray items = event.getAsJsonArray("items");
+                        if (items != null && !items.isEmpty()) {
+                            valid.add(event);
+                        }
+                    }
                 }
                 case "mob" -> {
-                    JsonArray mobs = event.getAsJsonArray("mobs");
-                    if (mobs != null && !mobs.isEmpty()) valid.add(event);
+                    if (event.has("mobs")) {
+                        JsonArray mobs = event.getAsJsonArray("mobs");
+                        if (mobs != null && !mobs.isEmpty()) {
+                            valid.add(event);
+                        }
+                    }
                 }
                 case "structure" -> {
-                    JsonArray structures = event.getAsJsonArray("structures");
-                    if (structures != null && !structures.isEmpty()) valid.add(event);
+                    if (event.has("structure") || (event.has("structures") && !event.getAsJsonArray("structures").isEmpty())) {
+                        valid.add(event);
+                    }
                 }
-                case "effect", "explosion" -> valid.add(event);
+                case "effect" -> {
+                    if (event.has("effects")) {
+                        JsonArray effects = event.getAsJsonArray("effects");
+                        if (effects != null && !effects.isEmpty()) {
+                            valid.add(event);
+                        }
+                    }
+                }
+                case "explosion" -> {
+                    // Explosão não precisa de sub-campos obrigatórios, sempre válido
+                    valid.add(event);
+                }
+                default -> {
+                    System.out.println("[LuckyBlock] Unknown type ignored in filter: " + type);
+                }
             }
         }
+
         return valid;
     }
+
 
     private static JsonObject pickRandomLuck(List<JsonObject> pool) {
         int totalChance = pool.stream()
@@ -131,11 +166,12 @@ public class LuckyBlockHandler {
             case "item" -> dropRandomItem(world, pos, data);
             case "mob" -> spawnMob(world, pos, data);
             case "effect" -> applyRandomEffects(world, pos, data);
-            case "structure" -> placeStructure(world, pos, data);
+            case "structure" -> generateStructure(world, pos, data); // Agora chama o novo método!
             case "explosion" -> createExplosion(world, pos, data);
             default -> System.out.println("[LuckyBlock] Unknown luck type: " + type);
         }
     }
+
 
     private static void dropRandomItem(ServerWorld world, BlockPos pos, JsonObject data) {
         JsonArray items = data.getAsJsonArray("items");
@@ -212,24 +248,41 @@ public class LuckyBlockHandler {
         player.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(effect.get(), duration, amplifier));
     }
 
-    private static void placeStructure(ServerWorld world, BlockPos pos, JsonObject data) {
+    private static void generateStructure(ServerWorld world, BlockPos pos, JsonObject data) {
         try {
-            JsonArray structures = data.getAsJsonArray("structures");
-            if (structures == null || structures.isEmpty()) return;
+            String structureId;
 
-            String structureId = structures.get(random.nextInt(structures.size())).getAsString();
+            if (data.has("structure")) {
+                // Se tiver apenas um único campo "structure"
+                structureId = data.get("structure").getAsString();
+            } else if (data.has("structures")) {
+                // Se tiver lista "structures", sortear aleatório
+                JsonArray structures = data.getAsJsonArray("structures");
+                if (structures.isEmpty()) {
+                    System.out.println("[LuckMod] Structures list is empty!");
+                    return;
+                }
+                int randomIndex = world.getRandom().nextInt(structures.size());
+                structureId = structures.get(randomIndex).getAsString();
+            } else {
+                System.out.println("[LuckMod] No structure or structures field found!");
+                return;
+            }
 
             world.getServer().getCommandManager().executeWithPrefix(
-                    world.getServer().getCommandSource()
+                    world.getServer()
+                            .getCommandSource()
                             .withLevel(4)
-                            .withWorld(world)
-                            .withPosition(Vec3d.ofCenter(pos.up())),
+                            .withPosition(Vec3d.ofCenter(pos)),
                     "place structure " + structureId
             );
+            System.out.println("[LuckMod] Structure placed using command: " + structureId);
         } catch (Exception e) {
-            System.out.println("[LuckyBlock] Failed to place structure: " + e.getMessage());
+            System.out.println("[LuckMod] Failed to place structure by command: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     private static void createExplosion(ServerWorld world, BlockPos pos, JsonObject data) {
         float power = data.has("power") ? data.get("power").getAsFloat() : 4.0f;
@@ -311,7 +364,7 @@ public class LuckyBlockHandler {
             effects.add(haste);
 
             effectBuff.add("effects", effects);
-            effectBuff.addProperty("applyAll", false); // aplica só um efeito aleatório
+            effectBuff.addProperty("applyAll", false);
             effectBuff.addProperty("chance", 20);
             pool.add(effectBuff);
 
@@ -320,12 +373,11 @@ public class LuckyBlockHandler {
             structureSpawn.addProperty("type", "structure");
             JsonArray structures = new JsonArray();
             structures.add("minecraft:desert_pyramid");
-            structures.add("minecraft:igloo");
-            structures.add("minecraft:ruined_portal");
+            structures.add("minecraft:ocean_monument");
+            structures.add("minecraft:bastion_remnant");
             structureSpawn.add("structures", structures);
             structureSpawn.addProperty("chance", 15);
             pool.add(structureSpawn);
-
 
             JsonObject explosion = new JsonObject();
             explosion.addProperty("type", "explosion");
@@ -333,7 +385,6 @@ public class LuckyBlockHandler {
             explosion.addProperty("fire", true);
             explosion.addProperty("chance", 10);
             pool.add(explosion);
-
 
             defaultConfig.add("luckPool", pool);
 
@@ -349,5 +400,6 @@ public class LuckyBlockHandler {
             System.out.println("[LuckyBlock] Failed to create default config: " + e.getMessage());
         }
     }
+
 
 }
