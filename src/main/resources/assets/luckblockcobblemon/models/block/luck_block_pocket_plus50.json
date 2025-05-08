@@ -1,0 +1,8 @@
+{
+    "parent": "block/orientable",
+    "textures": {
+        "top": "luckblockcobblemon:block/luck_block_pocket_plus50",
+        "front": "luckblockcobblemon:block/luck_block_pocket_plus50",
+        "side": "luckblockcobblemon:block/luck_block_pocket_plus50"
+    }
+}

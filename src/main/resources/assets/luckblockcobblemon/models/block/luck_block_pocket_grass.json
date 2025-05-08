@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "luckblockcobblemon:block/luck_block_pocket_grass"
+  }
+}

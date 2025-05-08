@@ -1,13 +1,50 @@
-/time set day
-/gamerule doDaylightCycle false
-/difficulty hard
-/kill @e
-/place structure minecraft:ruined_portal ~ ~ ~
-/function luckmod:spawn_tnt_circle
-/gamerule doDaylightCycle false
-/time set day
-/pokegive infernape
-/luckblock reload
 /luckyblock reload
-/tp 10000 100 -10000
+/effect give Player620 minecraft:night_vision 9999
+/give Player578 luckblockcobblemon:luck_obsidian
+/give Player122 minecraft:structure_block
 /luckyblock reload
+/spawnluckornot
+/luckyblock reload
+/tp 10000 100 -100
+/time set day
+/tp 10000 100 500
+/luckyblock reload
+/place structure luckblockcobblemon:luckornot
+/luckyblock reload
+/place structure cobblemon:fossils/prehistoric_birch_tree
+/place structure cobblemon:ruins/rooted_gimmi_tower
+/time set day
+/luckyblock reload
+/place structure cobblemon:shipwreck_coves/lush_shipwreck_cove
+/effect give Player2 minecraft:night_vision 9999 2
+/place structure cobblemon:shipwreck_coves/lush_shipwreck_cove
+/place structure cobblemon:ruins/crumbling_arch_ruins
+/effect give Player2 minecraft:night_vision 9999 2
+/effect give Player2 minecraft:night_vision 9999
+/effect give Player2 minecraft:night_vision 9999 5
+/effect give Player2 minecraft:night_vision 9999 5 true
+/place structure cobblemon:ruins/luna_henge_ruins
+/place structure cobblemon:fossils/prehistoric_frozen_spike
+/place structure cobblemon:ruins/toppled_pillars_ruins
+/place structure cobblemon:ruins/stonjourner_henge_ruins
+/place structure cobblemon:ruins/lush_gimmi_tower
+/place structure cobblemon:ruins/unstable_cave_ruins
+/place structure cobblemon:ruins/temperate_gimmi_tower
+/place structure cobblemon:ruins/fallen_statue_ruins
+/place structure cobblemon:ruins/decaying_crypt_ruins
+/place structure cobblemon:fossils/prehistoric_preserved_skeleton
+/place structure cobblemon:fossils/prehistoric_vibrant_hydrothermal_vents
+/place structure cobblemon:fossils/prehistoric_dripstone_oasis
+/place structure cobblemon:fossils/prehistoric_sandy_den
+/luckyblock reload
+/place structure cobblemon:ruins/unstable_cave_ruins
+/luckyblock reload
+/give Player433 cobblemon:green_mint_leaf
+/luckyblock reload
+/give Player922 cobblemon:rock_gem
+/luckyblock reload
+/give Player922 cobblemon:rock_gem
+/luckyblock reload
+/tp 10000 100 -500
+/tp Player614 100 100 1000000
+/tp Player614 100 100 -1000000

@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "luckmod:block/lucky_block_cobble" }
+    "": { "model": "luckblockcobblemon:block/lucky_block_cobble" }
   }
 }

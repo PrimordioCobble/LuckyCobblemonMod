@@ -1,0 +1,19 @@
+{
+    "variants": {
+        "facing=north": {
+            "model": "luckblockcobblemon:block/luck_block_vanilla"
+        },
+        "facing=east": {
+            "model": "luckblockcobblemon:block/luck_block_vanilla",
+            "y": 90
+        },
+        "facing=south": {
+            "model": "luckblockcobblemon:block/luck_block_vanilla",
+            "y": 180
+        },
+        "facing=west": {
+            "model": "luckblockcobblemon:block/luck_block_vanilla",
+            "y": 270
+        }
+    }
+}

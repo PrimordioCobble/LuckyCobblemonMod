@@ -1,6 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "luckmod:block/lucky_block_cobble"
+    "all": "luckblockcobblemon:block/lucky_block_cobble"
   }
 }

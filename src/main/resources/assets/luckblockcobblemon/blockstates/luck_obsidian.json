@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north,half=bottom,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_bottom" },
+    "facing=south,half=bottom,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_bottom", "y": 180 },
+    "facing=west,half=bottom,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_bottom", "y": 270 },
+    "facing=east,half=bottom,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_bottom", "y": 90 },
+    "facing=north,half=top,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_top" },
+    "facing=south,half=top,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_top", "y": 180 },
+    "facing=west,half=top,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_top", "y": 270 },
+    "facing=east,half=top,open=false": { "model": "luckblockcobblemon:block/luck_obsidian_top", "y": 90 },
+    "facing=north,half=bottom,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "uvlock": true },
+    "facing=south,half=bottom,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "y": 180, "uvlock": true },
+    "facing=west,half=bottom,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "y": 270, "uvlock": true },
+    "facing=east,half=bottom,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "y": 90, "uvlock": true },
+    "facing=north,half=top,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "x": 180, "uvlock": true },
+    "facing=south,half=top,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "x": 180, "y": 180, "uvlock": true },
+    "facing=west,half=top,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "x": 180, "y": 270, "uvlock": true },
+    "facing=east,half=top,open=true": { "model": "luckblockcobblemon:block/luck_obsidian_open", "x": 180, "y": 90, "uvlock": true }
+  }
+}
