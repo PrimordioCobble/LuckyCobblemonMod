@@ -30,6 +30,8 @@ public class CobbleLuckyBlockHandler {
     private static int maxLevel = 30;
     private static int shinyChancePercent = 5;
 
+
+    /*
     public static void loadConfig() {
         try {
             File file = new File(CONFIG_PATH);
@@ -61,7 +63,7 @@ public class CobbleLuckyBlockHandler {
         loadConfig();
         System.out.println("[CobbleLuckyBlock] Config reloaded!");
     }
-
+*/
     public static void handleLuck(ServerWorld world, BlockPos pos) {
         if (luckPool.isEmpty()) {
             System.out.println("[CobbleLuckyBlock] Warning: Luck pool is empty!");

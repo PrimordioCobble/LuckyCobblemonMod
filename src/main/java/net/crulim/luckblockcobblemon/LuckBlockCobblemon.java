@@ -11,11 +11,13 @@ import net.crulim.luckblockcobblemon.block.LuckyBlockHandler;
 
 import net.crulim.luckblockcobblemon.util.ReadmeGenerator;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.crulim.luckblockcobblemon.command.StructureCommand;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import static net.minecraft.server.command.CommandManager.literal;
 import org.slf4j.Logger;
@@ -29,18 +31,24 @@ public class LuckBlockCobblemon implements ModInitializer {
 	public void onInitialize() {
 		ModBlocks.registerModBlocks();
 		ModItems.registerModItems();
-		LuckyBlockHandlerPocket.loadConfig();
 		ModItemGroups.registerItemGroups();
 		ModItemGroups.registerItemGroups();
-		LuckConfig.load();
-		LuckyBlockHandler.loadConfig();
+		BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.OBSIDIAN_LEAF, RenderLayer.getCutout());
+
+
 		PocketLuckHandler.loadConfig();
 		ReadmeGenerator.generateReadmeIfMissing();
 
 
-		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+		/* ServerLifecycleEvents.SERVER_STARTING.register(server -> {
 			CobbleLuckyBlockHandler.loadConfig();
+		}); */
+		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+			LuckyBlockHandlerPocket.loadConfig();
 		});
+		/* ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+			LuckyBlockHandler.loadConfig();
+		}); */
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			StructureCommand.register(dispatcher);
@@ -51,8 +59,8 @@ public class LuckBlockCobblemon implements ModInitializer {
 					literal("luckyblock")
 							.then(literal("reload")
 									.executes(context -> {
-										LuckyBlockHandler.reloadConfig();
-										CobbleLuckyBlockHandler.reloadConfig();
+										/* LuckyBlockHandler.reloadConfig();
+										CobbleLuckyBlockHandler.reloadConfig(); */
 										LuckyBlockHandlerPocket.reloadConfig();
 										PocketLuckHandler.reloadConfig();
 										context.getSource().sendFeedback(() -> Text.literal("Both Lucky Blocks configs reloaded!"), false);
@@ -62,4 +70,6 @@ public class LuckBlockCobblemon implements ModInitializer {
 			);
 		});
 	}
+
+
 }

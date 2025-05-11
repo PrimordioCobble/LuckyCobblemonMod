@@ -1,50 +1,50 @@
-/luckyblock reload
-/effect give Player620 minecraft:night_vision 9999
-/give Player578 luckblockcobblemon:luck_obsidian
-/give Player122 minecraft:structure_block
-/luckyblock reload
-/spawnluckornot
-/luckyblock reload
-/tp 10000 100 -100
+/give @p luckblockcobblemon:obsidian_leaf
+/loot spawn ~ ~ ~ loot luckblockcobblemon:blocks/obsidian_leaf
+/gamemode creative
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -640 ~ -544
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -448 ~ 32
+/tp 1000 100 10000
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 1024 ~ 10000
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -240 ~ 384
+/tp 5000 100 100
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 4560 ~ -320
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -208 ~ -304
+/tp 5000 100 1000
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 4528 ~ 672
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 5168 ~ 400
+/tp @s 5168 ~ 800
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 4880 ~ 400
+/place structure luckblockcobblemon:luckblockrandom1
 /time set day
-/tp 10000 100 500
-/luckyblock reload
-/place structure luckblockcobblemon:luckornot
-/luckyblock reload
-/place structure cobblemon:fossils/prehistoric_birch_tree
-/place structure cobblemon:ruins/rooted_gimmi_tower
+/place structure luckblockcobblemon:luckblockrandom1
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -640 ~ -624
+/tp @s -640 ~ 625
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -944 ~ 320
+/tp @s 944 ~ 320
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 736 ~ 1104
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -640 ~ -624
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 336 ~ -576
+/locate structure luckblockcobblemon:luckblockrandom2
+/tp @s -1104 ~ -592
+/locate structure luckblockcobblemon:luckblockrandom3
+/tp @s -1536 ~ -368
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -1968 ~ -1184
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 608 ~ -608
 /time set day
 /luckyblock reload
-/place structure cobblemon:shipwreck_coves/lush_shipwreck_cove
-/effect give Player2 minecraft:night_vision 9999 2
-/place structure cobblemon:shipwreck_coves/lush_shipwreck_cove
-/place structure cobblemon:ruins/crumbling_arch_ruins
-/effect give Player2 minecraft:night_vision 9999 2
-/effect give Player2 minecraft:night_vision 9999
-/effect give Player2 minecraft:night_vision 9999 5
-/effect give Player2 minecraft:night_vision 9999 5 true
-/place structure cobblemon:ruins/luna_henge_ruins
-/place structure cobblemon:fossils/prehistoric_frozen_spike
-/place structure cobblemon:ruins/toppled_pillars_ruins
-/place structure cobblemon:ruins/stonjourner_henge_ruins
-/place structure cobblemon:ruins/lush_gimmi_tower
-/place structure cobblemon:ruins/unstable_cave_ruins
-/place structure cobblemon:ruins/temperate_gimmi_tower
-/place structure cobblemon:ruins/fallen_statue_ruins
-/place structure cobblemon:ruins/decaying_crypt_ruins
-/place structure cobblemon:fossils/prehistoric_preserved_skeleton
-/place structure cobblemon:fossils/prehistoric_vibrant_hydrothermal_vents
-/place structure cobblemon:fossils/prehistoric_dripstone_oasis
-/place structure cobblemon:fossils/prehistoric_sandy_den
-/luckyblock reload
-/place structure cobblemon:ruins/unstable_cave_ruins
-/luckyblock reload
-/give Player433 cobblemon:green_mint_leaf
-/luckyblock reload
-/give Player922 cobblemon:rock_gem
-/luckyblock reload
-/give Player922 cobblemon:rock_gem
-/luckyblock reload
-/tp 10000 100 -500
-/tp Player614 100 100 1000000
-/tp Player614 100 100 -1000000

@@ -9,7 +9,7 @@
         "item": "minecraft:gold_block"
         },
         "H": {
-        "item": "luckblockcobblemon:luck_block_vanilla"
+        "item": "minecraft:crafter"
         }
     },
     "pattern": [

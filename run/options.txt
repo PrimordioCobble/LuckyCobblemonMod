@@ -121,6 +121,11 @@ key_key.hotbar.6:key.keyboard.6
 key_key.hotbar.7:key.keyboard.7
 key_key.hotbar.8:key.keyboard.8
 key_key.hotbar.9:key.keyboard.9
+key_key.cobblemon.hideparty:key.keyboard.o
+key_key.cobblemon.summary:key.keyboard.m
+key_key.cobblemon.downshiftparty:key.keyboard.down
+key_key.cobblemon.upshiftparty:key.keyboard.up
+key_key.cobblemon.throwpartypokemon:key.keyboard.r
 soundCategory_master:0.423841059602649
 soundCategory_music:0.0
 soundCategory_record:1.0

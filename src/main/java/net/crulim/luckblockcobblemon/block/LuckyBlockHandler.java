@@ -30,15 +30,22 @@ public class LuckyBlockHandler {
 
     private static List<JsonObject> luckPool = new ArrayList<>();
     private static LuckyBlockRandomizer<JsonObject> luckPoolRandomizer;
-
+/*
     public static void loadConfig() {
         try {
             File file = new File(CONFIG_PATH);
-            if (!file.exists()) {
+            if (!file.exists() || file.length() == 0) {
+                System.out.println("[LuckyBlock] ⚠ Arquivo inexistente ou vazio. Gerando default...");
                 generateDefaultConfig(file);
             }
 
             JsonObject json = JsonParser.parseReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)).getAsJsonObject();
+
+            if (!json.has("luckPool")) {
+                System.out.println("[LuckyBlock] ⚠ Arquivo inválido (sem luckPool). Gerando default...");
+                generateDefaultConfig(file);
+            }
+
             JsonArray poolArray = json.getAsJsonArray("luckPool");
 
             luckPool.clear();
@@ -47,19 +54,20 @@ public class LuckyBlockHandler {
             }
 
             luckPoolRandomizer = new LuckyBlockRandomizer<>(luckPool);
-
             System.out.println("[LuckyBlock] Config loaded successfully.");
 
         } catch (Exception e) {
             System.out.println("[LuckyBlock] Failed to load config: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     public static void reloadConfig() {
         loadConfig();
         System.out.println("[LuckyBlock] Config reloaded!");
     }
-
+*/
     public static void handleLuck(ServerWorld world, BlockPos pos) {
         if (luckPool.isEmpty() || luckPoolRandomizer == null) {
             System.out.println("[LuckyBlock] Warning: Luck pool is empty!");
@@ -276,6 +284,7 @@ public class LuckyBlockHandler {
     }
 
     private static void generateDefaultConfig(File file) {
+
         try {
             JsonObject defaultConfig = new JsonObject();
             JsonArray pool = new JsonArray();

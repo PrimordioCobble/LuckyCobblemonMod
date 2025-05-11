@@ -1,0 +1,6 @@
+{
+  "parent": "block/leaves",
+  "textures": {
+    "all": "luckblockcobblemon:block/obsidian_leaf"
+  }
+}
