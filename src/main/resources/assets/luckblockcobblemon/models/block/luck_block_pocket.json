@@ -1,8 +1,12 @@
 {
-    "parent": "block/orientable",
+    "parent": "block/cube",
     "textures": {
-        "top": "luckblockcobblemon:block/luck_block_pocket",
-        "front": "luckblockcobblemon:block/luck_block_pocket",
-        "side": "luckblockcobblemon:block/luck_block_pocket"
+        "up": "luckblockcobblemon:block/luck_block_pocket_top",
+        "down": "luckblockcobblemon:block/luck_block_pocket_bottom",
+        "north": "luckblockcobblemon:block/luck_block_pocket_front",
+        "south": "luckblockcobblemon:block/luck_block_pocket_back",
+        "west": "luckblockcobblemon:block/luck_block_pocket_left",
+        "east": "luckblockcobblemon:block/luck_block_pocket_right",
+        "particle": "luckblockcobblemon:block/luck_block_pocket_top"
     }
 }

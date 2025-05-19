@@ -33,7 +33,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 		ModItems.registerModItems();
 		ModItemGroups.registerItemGroups();
 		ModItemGroups.registerItemGroups();
-		BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.OBSIDIAN_LEAF, RenderLayer.getCutout());
+
 
 
 		PocketLuckHandler.loadConfig();

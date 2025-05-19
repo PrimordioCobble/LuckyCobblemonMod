@@ -1,17 +1,3 @@
-/give @p luckblockcobblemon:obsidian_leaf
-/loot spawn ~ ~ ~ loot luckblockcobblemon:blocks/obsidian_leaf
-/gamemode creative
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -640 ~ -544
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -448 ~ 32
-/tp 1000 100 10000
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 1024 ~ 10000
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -240 ~ 384
-/tp 5000 100 100
-/locate structure luckblockcobblemon:luckblockrandom1
 /tp @s 4560 ~ -320
 /locate structure luckblockcobblemon:luckblockrandom1
 /tp @s -208 ~ -304
@@ -47,4 +33,18 @@
 /locate structure luckblockcobblemon:luckblockrandom4
 /tp @s 608 ~ -608
 /time set day
+/luckyblock reload
+/time set day
+/luckyblock reload
+/locate structure luckblockcobblemon:luckblockrandom2
+/tp @s 944 ~ 960
+/gamemode spectator
+/locate structure luckblockcobblemon:luckblockrandom3
+/tp @s 1200 ~ 1264
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 1008 ~ 1392
+/gamemode creative
+/luckyblock reload
+/time set day
+/weather clear
 /luckyblock reload

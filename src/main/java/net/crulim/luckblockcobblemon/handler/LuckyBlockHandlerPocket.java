@@ -4,6 +4,8 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
+import com.cobblemon.mod.common.api.moves.Move;
+import com.cobblemon.mod.common.api.moves.MoveTemplate;
 import com.google.gson.*;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
@@ -16,11 +18,16 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
+
+
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static net.minecraft.predicate.entity.LocationPredicate.Builder.createStructure;
 
 public class LuckyBlockHandlerPocket {
     private static final List<LevelRangeWeight> weightedLevels = new ArrayList<>();
@@ -306,37 +313,35 @@ public class LuckyBlockHandlerPocket {
 
         speciesName = normalizeSpeciesName(speciesName);
 
-        if (PokemonSpecies.INSTANCE.getByName(speciesName) == null) {
-            System.out.println("[LuckyBlockPocket] Pokémon inválido ignorado: " + speciesName);
-            return;
-        }
-
-
-        System.out.println("[LuckyBlockPocket] Tentando pegar espécie: " + speciesName);
         Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
         if (species == null) {
             System.out.println("[LuckyBlockPocket] ESPÉCIE NÃO ENCONTRADA: " + speciesName);
             return;
         }
 
+        int level = data.has("level") ? data.get("level").getAsInt() : getWeightedRandomLevel();
+        boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChancePercent);
+
         Pokemon pokemon = new Pokemon();
         pokemon.setSpecies(species);
+        pokemon.setLevel(level);
+        pokemon.setShiny(isShiny);
 
-        int level;
-        if (data.has("level")) {
-            level = data.get("level").getAsInt();
-            System.out.println("[LuckyBlockPocket] Level definido via JSON: " + level);
-        } else {
-            level = getWeightedRandomLevel();
-            System.out.println("[LuckyBlockPocket] Level sorteado com peso: " + level);
+        // ✅ Garante ataques funcionais com PP
+        pokemon.getMoveSet().clear();
+        Iterable<MoveTemplate> relearnableMoves = pokemon.getRelearnableMoves();
+        int index = 0;
+
+        for (MoveTemplate template : relearnableMoves) {
+            if (template != null && index < 4) {
+                int maxPp = template.getMaxPp();
+                Move move = new Move(template, template.getPp(), 0);
+                pokemon.getMoveSet().setMove(index, move);
+                index++;
+            }
         }
 
-        pokemon.setLevel(level);
         System.out.println("[LuckyBlockPocket] Level definido: " + level);
-
-        float localShinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
-        boolean isShiny = forceShiny || (random.nextFloat() * 100F < localShinyChance);
-        pokemon.setShiny(isShiny);
         System.out.println("[LuckyBlockPocket] Shiny: " + isShiny);
 
         Vec3d spawnPos = Vec3d.ofCenter(pos).add(0, 1, 0);
@@ -437,7 +442,24 @@ public class LuckyBlockHandlerPocket {
                 System.out.println("[LuckyBlockPocket] Lista de estruturas vazia.");
                 return;
             }
-            structureId = structures.get(random.nextInt(structures.size())).getAsString();
+            List<JsonObject> weightedList = new ArrayList<>();
+            int totalWeight = 0;
+
+            for (JsonElement el : structures) {
+                JsonObject obj = el.getAsJsonObject();
+                int weight = obj.has("weight") ? obj.get("weight").getAsInt() : 1;
+                for (int i = 0; i < weight; i++) {
+                    weightedList.add(obj);
+                }
+            }
+
+            if (weightedList.isEmpty()) {
+                System.out.println("[LuckyBlockPocket] Weighted structure list is empty.");
+                return;
+            }
+
+            JsonObject selected = weightedList.get(random.nextInt(weightedList.size()));
+            structureId = selected.get("id").getAsString();
         } else if (data.has("structure")) {
             structureId = data.get("structure").getAsString();
         } else {
@@ -455,14 +477,22 @@ public class LuckyBlockHandlerPocket {
         }
 
         var template = optional.get();
-        BlockPos placementPos = pos.up().west(4); // 1 bloco acima do bloco quebrado e 4 blocos a direita
+        BlockPos placementPos = pos.west(4); 
 
+        if (structureId.equals("luckblockcobblemon:luckornot")) {
+            placementPos = placementPos.down(4);
+        }
         template.place(world, placementPos, placementPos,
                 new net.minecraft.structure.StructurePlacementData(),
                 random, 3);
     }
 
-
+    private static JsonObject createStructureJson(String id, int weight) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("id", id);
+        obj.addProperty("weight", weight);
+        return obj;
+    }
 
     private static void generateDefaultConfig(File file) {
         try {
@@ -485,22 +515,21 @@ public class LuckyBlockHandlerPocket {
             // Estrutura
             JsonObject structureSpawn = new JsonObject();
             structureSpawn.addProperty("type", "structure");
+            structureSpawn.addProperty("chance", 1F);
+            structureSpawn.addProperty("__note", "Você pode ajustar o peso (raridade) de cada estrutura aqui. Quanto maior o weight, mais comum será a estrutura.");
 
             JsonArray structures = new JsonArray();
-            structures.add("luckblockcobblemon:eletric_boss");
-            structures.add("luckblockcobblemon:fairy_boss");
-            structures.add("luckblockcobblemon:fire_boss");
-            structures.add("luckblockcobblemon:fly_boss");
-            structures.add("luckblockcobblemon:grass_and_bug_boss");
-            structures.add("luckblockcobblemon:ground_boss");
-            structures.add("luckblockcobblemon:ice_and_water_boss");
-            structures.add("luckblockcobblemon:luckornot");
-            structures.add("luckblockcobblemon:stone_boss");
-
+            structures.add(createStructureJson("luckblockcobblemon:eletric_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:fairy_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:fire_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:fly_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:grass_and_bug_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:ground_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:ice_and_water_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:stone_boss", 10));
+            structures.add(createStructureJson("luckblockcobblemon:luckornot", 3)); // mais raro
 
             structureSpawn.add("structures", structures);
-            structureSpawn.addProperty("chance", 1F);
-
             pool.add(structureSpawn);
 
             // Itens do Cobblemon
@@ -532,8 +561,8 @@ public class LuckyBlockHandlerPocket {
             String[] cobblemonList = {
                     "bulbasaur","ivysaur","venusaur","charmander","charmeleon","charizard","squirtle","wartortle","blastoise",
                     "caterpie","metapod","butterfree","weedle","kakuna","beedrill","pidgey","pidgeotto","pidgeot","rattata",
-                    "raticate","spearow","fearow","ekans","arbok","pikachu","raichu","sandshrew","sandslash","nidoran_f",
-                    "nidorina","nidoqueen","nidoran_m","nidorino","nidoking","clefairy","clefable","vulpix","ninetales",
+                    "raticate","spearow","fearow","ekans","arbok","pikachu","raichu","sandshrew","sandslash","nidoranf",
+                    "nidorina","nidoqueen","nidoranm","nidorino","nidoking","clefairy","clefable","vulpix","ninetales",
                     "jigglypuff","wigglytuff","zubat","golbat","oddish","gloom","vileplume","paras","parasect","venonat",
                     "venomoth","diglett","dugtrio","meowth","persian","psyduck","golduck","mankey","primeape","growlithe",
                     "arcanine","poliwag","poliwhirl","poliwrath","abra","kadabra","alakazam","machop","machoke","machamp",
@@ -542,7 +571,7 @@ public class LuckyBlockHandlerPocket {
                     "grimer","muk","shellder","cloyster","gastly","haunter","gengar","onix","drowzee","hypno","krabby",
                     "kingler","voltorb","electrode","exeggcute","exeggutor","cubone","marowak","hitmonlee","hitmonchan",
                     "lickitung","koffing","weezing","rhyhorn","rhydon","chansey","tangela","kangaskhan","horsea","seadra",
-                    "goldeen","seaking","staryu","starmie","mr_mime","scyther","jynx","electabuzz","magmar","pinsir","tauros",
+                    "goldeen","seaking","staryu","starmie","mrmime","scyther","jynx","electabuzz","magmar","pinsir","tauros",
                     "magikarp","gyarados","lapras","ditto","eevee","vaporeon","jolteon","flareon","porygon","omanyte","omastar",
                     "kabuto","kabutops","aerodactyl","snorlax","articuno","zapdos","moltres","dratini","dragonair","dragonite",
                     "mewtwo","mew"
@@ -552,6 +581,7 @@ public class LuckyBlockHandlerPocket {
             cobblemonSpawn.addProperty("__nota_min_max_level", "Você pode adicionar 'minLevel' e 'maxLevel' neste evento para definir um nível aleatório personalizado. Exemplo: minLevel: 10, maxLevel: 50. Se não definir, o sistema usará 'levelWeighting'.");
             cobblemonSpawn.addProperty("chance", 75F);
             pool.add(cobblemonSpawn);
+
 
             // Shiny Cobblemon (reutiliza a mesma lista do evento anterior)
             JsonObject shinySpawn = new JsonObject();
@@ -629,7 +659,7 @@ public class LuckyBlockHandlerPocket {
                     "cobblemon:shiny_stone_shard", "cobblemon:sun_stone", "cobblemon:sun_stone_shard",
                     "cobblemon:thunder_stone", "cobblemon:thunder_stone_shard", "cobblemon:upgrade",
                     "cobblemon:upgrade_fragment", "cobblemon:water_stone", "cobblemon:water_stone_shard",
-                    "cobblemon:whipped_dream", "cobblemon:whipped_dream_fragment"
+                    "cobblemon:whipped_dream", "cobblemon:whipped_dream_fragment", "cobblemon:master_ball"
             };
 
             for (String item : cobblemonItemList) allItems.add(item);

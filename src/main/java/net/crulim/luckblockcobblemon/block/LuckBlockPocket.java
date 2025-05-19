@@ -63,6 +63,7 @@ public class LuckBlockPocket extends BaseDirectionalBlock {
 
 
             net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerPocket.triggerLuckEvent(serverWorld, pos);
+
         }
 
         return super.onBreak(world, pos, state, player);

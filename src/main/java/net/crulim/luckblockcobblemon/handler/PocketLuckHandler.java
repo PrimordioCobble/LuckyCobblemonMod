@@ -28,10 +28,13 @@ public class PocketLuckHandler {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<String, List<JsonObject>> POOLS = new HashMap<>();
+    private static final List<LevelRangeWeight> weightedLevels = new ArrayList<>();
     private static final Random random = Random.create();
     private static final float shinyChancePercent = 5.0f;
     private static final int minLevel = 5;
     private static final int maxLevel = 15;
+    private static int defaultMinLevel = 5;
+    private static int defaultMaxLevel = 15;
 
     public static void loadConfig() {
         File configDir = new File(FabricLoader.getInstance().getGameDir().toFile(), "config/luckblockpocket");
@@ -49,6 +52,30 @@ public class PocketLuckHandler {
 
         for (String file : expectedFiles) {
             POOLS.computeIfAbsent(file, PocketLuckHandler::loadOrCreate);
+        }
+        File configFile = new File(configDir, "level_config.json");
+        if (configFile.exists()) {
+            try (Reader reader = new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8)) {
+                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+                if (json.has("levelWeighting")) {
+                    JsonArray levelArray = json.getAsJsonArray("levelWeighting");
+                    weightedLevels.clear();
+
+                    for (JsonElement el : levelArray) {
+                        JsonObject obj = el.getAsJsonObject();
+                        int min = obj.get("min").getAsInt();
+                        int max = obj.get("max").getAsInt();
+                        float chance = obj.get("chance").getAsFloat();
+                        weightedLevels.add(new LevelRangeWeight(min, max, chance));
+                    }
+
+                    defaultMinLevel = -1;
+                    defaultMaxLevel = -1;
+                    System.out.println("[PocketLuckHandler] LevelWeighting carregado com sucesso.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         System.out.println("[PocketLuckHandler] Configuração inicial carregada.");
@@ -73,6 +100,37 @@ public class PocketLuckHandler {
         }
     }
 
+    private static class LevelRangeWeight {
+        int min;
+        int max;
+        float chance;
+
+        LevelRangeWeight(int min, int max, float chance) {
+            this.min = min;
+            this.max = max;
+            this.chance = chance;
+        }
+    }
+
+    private static int getWeightedRandomLevel() {
+        float total = 0F;
+        for (LevelRangeWeight range : weightedLevels) {
+            total += range.chance;
+        }
+
+        float roll = random.nextFloat() * total;
+        float cumulative = 0F;
+
+        for (LevelRangeWeight range : weightedLevels) {
+            cumulative += range.chance;
+            if (roll < cumulative) {
+                return random.nextBetween(range.min, range.max + 1);
+            }
+        }
+
+        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1); // fallback
+    }
+
     private static List<JsonObject> loadOrCreate(String key) {
         File configDir = new File(FabricLoader.getInstance().getGameDir().toFile(), "config/luckblockpocket");
         File file = new File(configDir, key + ".json");
@@ -89,6 +147,14 @@ public class PocketLuckHandler {
             e.printStackTrace();
             return Collections.emptyList();
         }
+    }
+
+    private static JsonObject createLevelWeighting(int min, int max, double chance) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("min", min);
+        obj.addProperty("max", max);
+        obj.addProperty("chance", chance);
+        return obj;
     }
 
     private static void createDefault(File file, String key) {
@@ -352,10 +418,8 @@ public class PocketLuckHandler {
                 JsonObject pokemonDrop = new JsonObject();
                 pokemonDrop.addProperty("type", "pokemon");
                 pokemonDrop.add("pokemons", GSON.toJsonTree(pokemonMap.get(resolvedType)));
-                pokemonDrop.addProperty("minLevel", 85);
-                pokemonDrop.addProperty("maxLevel", 100);
                 pokemonDrop.addProperty("shinyChance", 10);
-                pokemonDrop.addProperty("chance", 85);
+                pokemonDrop.addProperty("chance", 85); // nível será definido pelo levelWeighting_<tipo>
 
                 JsonObject itemDrop = new JsonObject();
                 itemDrop.addProperty("type", "item");
@@ -383,6 +447,41 @@ public class PocketLuckHandler {
             }
 
             System.out.println("[PocketLuckHandler] Arquivo default criado: " + key);
+
+            // Geração automática do level_config.json com o grupo específico
+            if (resolvedType != null) {
+                File levelFile = new File("config/luckblockpocket/level_config.json");
+
+                JsonArray levelArray = new JsonArray();
+                levelArray.add(createLevelWeighting(85, 100, 5));
+                levelArray.add(createLevelWeighting(60, 84, 15));
+                levelArray.add(createLevelWeighting(30, 59, 30));
+                levelArray.add(createLevelWeighting(1, 29, 50));
+
+                JsonObject levelJson = new JsonObject();
+                levelJson.add("levelWeighting_" + resolvedType, levelArray);
+
+                try {
+                    if (levelFile.exists()) {
+                        JsonObject existing = GSON.fromJson(new FileReader(levelFile), JsonObject.class);
+                        if (!existing.has("levelWeighting_" + resolvedType)) {
+                            existing.add("levelWeighting_" + resolvedType, levelArray);
+                            try (Writer writer = new FileWriter(levelFile)) {
+                                GSON.toJson(existing, writer);
+                            }
+                        }
+                    } else {
+                        try (Writer writer = new FileWriter(levelFile)) {
+                            GSON.toJson(levelJson, writer);
+                        }
+                    }
+
+                    System.out.println("[PocketLuckHandler] levelWeighting_" + resolvedType + " gerado.");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -448,10 +547,14 @@ private static void spawnPokemon(ServerWorld world, BlockPos pos, JsonObject dat
     Pokemon pokemon = new Pokemon();
     pokemon.setSpecies(species);
 
-    int level = data.has("minLevel") && data.has("maxLevel")
-            ? random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt())
-            : random.nextBetween(minLevel, maxLevel);
-
+    int level;
+    if (data.has("minLevel") && data.has("maxLevel")) {
+        level = random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt() + 1);
+    } else if (!weightedLevels.isEmpty()) {
+        level = getWeightedRandomLevel();
+    } else {
+        level = random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
+    }
     pokemon.setLevel(level);
 
     float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
