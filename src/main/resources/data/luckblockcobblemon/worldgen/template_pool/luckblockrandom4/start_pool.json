@@ -6,8 +6,8 @@
       "weight": 1,
       "element": {
         "location": "luckblockcobblemon:luckblockrandom4",
-        "processors": "minecraft:empty",
         "projection": "rigid",
+        "processors": "minecraft:empty",
         "element_type": "minecraft:single_pool_element"
       }
     }

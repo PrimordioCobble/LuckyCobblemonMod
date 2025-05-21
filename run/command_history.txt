@@ -1,50 +1,50 @@
-/locate structure luckblockcobblemon:luckblockrandom1
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 960 ~ -1408
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 0 ~ 416
+/gamemode spectator
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 576 ~ 560
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 576 ~ 560
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 576 ~ 560
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 576 ~ 560
 /tp 1000 100 1000
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 464 ~ 848
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 16 ~ -240
-/locate structure luckblockcobblemon:luckblockrandom2
-/tp @s -176 ~ -400
-/locate structure luckblockcobblemon:luckblockrandom3
-/tp @s 128 ~ 128
 /locate structure luckblockcobblemon:luckblockrandom4
-/tp @s 432 ~ 432
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -576 ~ 64
-/locate structure luckblockcobblemon:luckblockrandom3
-/tp @s -272 ~ 64
+/tp 1000 100 10000
 /locate structure luckblockcobblemon:luckblockrandom4
-/tp @s 144 ~ -1408
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -256 ~ -1904
-/locate structure luckblockcobblemon:luckblockrandom3
-/tp @s -384 ~ -1504
-/locate structure luckblockcobblemon:luckblockrandom2
-/tp @s -608 ~ -1168
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -1056 ~ -1568
-/locate structure luckblockcobblemon:luckblockrandom3
-/tp @s -1984 ~ -2224
-/locate structure luckblockcobblemon:luckblockrandom2
-/tp @s -304 ~ -368
-/locate structure luckblockcobblemon:luckblockrandom2
-/tp @s -304 ~ -368
-/place structure luckblockcobblemon:luckblockrandom2
-/tp 100 100 100
-/place structure luckblockcobblemon:luckblockrandom2
-/locate structure luckblockcobblemon:luckblockrandom2
-/tp @s -992 ~ 1792
-/place structure luckblockcobblemon:luckblockrandom2
-/place structure luckblockcobblemon:luckblockrandom3
-/locate structure luckblockcobblemon:luckblockrandom3
-/tp @s -768 ~ 2016
-/place structure luckblockcobblemon:luckblockrandom3
-/locate structure luckblockcobblemon:luckblockrandom3
-/tp @s 592 ~ 448
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 160 ~ 16
-/locate structure luckblockcobblemon:luckblockrandom2
-/tp @s 496 ~ 944
+/tp @s 128 ~ 10496
+/tp 1000 100 -10000
 /locate structure luckblockcobblemon:luckblockrandom4
-/tp @s 192 ~ 976
+/tp @s 1344 ~ -10624
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 576 ~ 560
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 992 ~ -288
+/gamemode spectator
+/kill
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -1200 ~ 400
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s 992 200 -288
+/tp @s -1200 ~ 400
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -688 ~ -576
+/gamemode spectator
+/tp @s -688 ~ -5076
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -1824 ~ -5056
+/tp @s -18024 ~ -5056
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -17568 ~ -6000
+/tp @s -18024 ~ -50560
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -18592 ~ -50192
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -688 ~ -576
+/gamemode spectator
+/tp @s -18592 ~ -50192
+/locate structure luckblockcobblemon:luckblockrandom4
+/tp @s -18592 ~ -50192
