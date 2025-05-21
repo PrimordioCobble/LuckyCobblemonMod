@@ -1,50 +1,50 @@
-/tp @s 4560 ~ -320
 /locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -208 ~ -304
-/tp 5000 100 1000
+/tp 1000 100 1000
 /locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 4528 ~ 672
+/tp @s 464 ~ 848
 /locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 5168 ~ 400
-/tp @s 5168 ~ 800
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 4880 ~ 400
-/place structure luckblockcobblemon:luckblockrandom1
-/time set day
-/place structure luckblockcobblemon:luckblockrandom1
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -640 ~ -624
-/tp @s -640 ~ 625
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -944 ~ 320
-/tp @s 944 ~ 320
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 736 ~ 1104
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s -640 ~ -624
-/locate structure luckblockcobblemon:luckblockrandom1
-/tp @s 336 ~ -576
+/tp @s 16 ~ -240
 /locate structure luckblockcobblemon:luckblockrandom2
-/tp @s -1104 ~ -592
+/tp @s -176 ~ -400
 /locate structure luckblockcobblemon:luckblockrandom3
-/tp @s -1536 ~ -368
+/tp @s 128 ~ 128
 /locate structure luckblockcobblemon:luckblockrandom4
-/tp @s -1968 ~ -1184
+/tp @s 432 ~ 432
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -576 ~ 64
+/locate structure luckblockcobblemon:luckblockrandom3
+/tp @s -272 ~ 64
 /locate structure luckblockcobblemon:luckblockrandom4
-/tp @s 608 ~ -608
-/time set day
-/luckyblock reload
-/time set day
-/luckyblock reload
+/tp @s 144 ~ -1408
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -256 ~ -1904
+/locate structure luckblockcobblemon:luckblockrandom3
+/tp @s -384 ~ -1504
 /locate structure luckblockcobblemon:luckblockrandom2
-/tp @s 944 ~ 960
-/gamemode spectator
+/tp @s -608 ~ -1168
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s -1056 ~ -1568
 /locate structure luckblockcobblemon:luckblockrandom3
-/tp @s 1200 ~ 1264
+/tp @s -1984 ~ -2224
+/locate structure luckblockcobblemon:luckblockrandom2
+/tp @s -304 ~ -368
+/locate structure luckblockcobblemon:luckblockrandom2
+/tp @s -304 ~ -368
+/place structure luckblockcobblemon:luckblockrandom2
+/tp 100 100 100
+/place structure luckblockcobblemon:luckblockrandom2
+/locate structure luckblockcobblemon:luckblockrandom2
+/tp @s -992 ~ 1792
+/place structure luckblockcobblemon:luckblockrandom2
+/place structure luckblockcobblemon:luckblockrandom3
+/locate structure luckblockcobblemon:luckblockrandom3
+/tp @s -768 ~ 2016
+/place structure luckblockcobblemon:luckblockrandom3
+/locate structure luckblockcobblemon:luckblockrandom3
+/tp @s 592 ~ 448
+/locate structure luckblockcobblemon:luckblockrandom1
+/tp @s 160 ~ 16
+/locate structure luckblockcobblemon:luckblockrandom2
+/tp @s 496 ~ 944
 /locate structure luckblockcobblemon:luckblockrandom4
-/tp @s 1008 ~ 1392
-/gamemode creative
-/luckyblock reload
-/time set day
-/weather clear
-/luckyblock reload
+/tp @s 192 ~ 976

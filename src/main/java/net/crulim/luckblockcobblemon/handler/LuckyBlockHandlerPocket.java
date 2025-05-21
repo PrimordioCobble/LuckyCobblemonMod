@@ -18,9 +18,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
-
-
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -43,6 +40,19 @@ public class LuckyBlockHandlerPocket {
     private static int minLevel = 5;
     private static int maxLevel = 30;
     private static float shinyChancePercent = 5.0F;
+    private static final List<TimeBasedLevelRange> timeBasedLeveling = new ArrayList<>();
+
+    private static class TimeBasedLevelRange {
+        int minDays;
+        int maxDays;
+        List<LevelRangeWeight> levels;
+
+        TimeBasedLevelRange(int minDays, int maxDays, List<LevelRangeWeight> levels) {
+            this.minDays = minDays;
+            this.maxDays = maxDays;
+            this.levels = levels;
+        }
+    }
 
     public static void loadConfig() {
         try {
@@ -81,7 +91,6 @@ public class LuckyBlockHandlerPocket {
                     weightedLevels.add(new LevelRangeWeight(min, max, chance));
                 }
 
-                // Quando há weighting, desativa min/max padrão
                 minLevel = -1;
                 maxLevel = -1;
 
@@ -95,6 +104,27 @@ public class LuckyBlockHandlerPocket {
                 // fallback final se nenhum dos dois existir
                 minLevel = 5;
                 maxLevel = 30;
+            }
+            if (json.has("timeLeveling")) {
+                timeBasedLeveling.clear();
+                JsonArray timeArray = json.getAsJsonArray("timeLeveling");
+                for (JsonElement timeElement : timeArray) {
+                    JsonObject timeObj = timeElement.getAsJsonObject();
+                    int minDays = timeObj.get("minDays").getAsInt();
+                    int maxDays = timeObj.get("maxDays").getAsInt();
+                    List<LevelRangeWeight> timeWeights = new ArrayList<>();
+
+                    JsonArray levels = timeObj.getAsJsonArray("levels");
+                    for (JsonElement lvl : levels) {
+                        JsonObject obj = lvl.getAsJsonObject();
+                        int min = obj.get("min").getAsInt();
+                        int max = obj.get("max").getAsInt();
+                        float chance = obj.get("chance").getAsFloat();
+                        timeWeights.add(new LevelRangeWeight(min, max, chance));
+                    }
+
+                    timeBasedLeveling.add(new TimeBasedLevelRange(minDays, maxDays, timeWeights));
+                }
             }
 
             System.out.println("[LuckyBlockPocket] Config loaded successfully.");
@@ -136,6 +166,33 @@ public class LuckyBlockHandlerPocket {
         // fallback se nada for sorteado
         return random.nextBetween(1, 101);
     }
+
+    private static int getTimeBasedLevel(ServerWorld world) {
+        long days = world.getTimeOfDay() / 24000L;
+
+        for (TimeBasedLevelRange timeRange : timeBasedLeveling) {
+            if (days >= timeRange.minDays && days <= timeRange.maxDays) {
+                System.out.println("[PocketLuckHandler] Tempo atual: " + days + " dias. Usando faixa de " + timeRange.minDays + " a " + timeRange.maxDays);
+                float total = 0F;
+                for (LevelRangeWeight range : timeRange.levels) {
+                    total += range.chance;
+                }
+
+                float roll = random.nextFloat() * total;
+                float cumulative = 0F;
+                for (LevelRangeWeight range : timeRange.levels) {
+                    cumulative += range.chance;
+                    if (roll < cumulative) {
+                        return random.nextBetween(range.min, range.max + 1);
+                    }
+                }
+            }
+
+        }
+
+        return -1; // nenhum match
+    }
+
 
     public static void reloadConfig() {
         loadConfig();
@@ -319,7 +376,16 @@ public class LuckyBlockHandlerPocket {
             return;
         }
 
-        int level = data.has("level") ? data.get("level").getAsInt() : getWeightedRandomLevel();
+        int level;
+        if (data.has("level")) {
+            level = data.get("level").getAsInt();
+        } else if (!timeBasedLeveling.isEmpty()) {
+            int timeBased = getTimeBasedLevel(world);
+            level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+        } else {
+            level = getWeightedRandomLevel();
+        }
+
         boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChancePercent);
 
         Pokemon pokemon = new Pokemon();
@@ -370,7 +436,16 @@ public class LuckyBlockHandlerPocket {
             int max = data.get("maxLevel").getAsInt();
             level = random.nextBetween(min, max + 1);
         } else {
-            level = getWeightedRandomLevel();
+            if (data.has("minLevel") && data.has("maxLevel")) {
+                int min = data.get("minLevel").getAsInt();
+                int max = data.get("maxLevel").getAsInt();
+                level = random.nextBetween(min, max + 1);
+            } else if (!timeBasedLeveling.isEmpty()) {
+                int timeBased = getTimeBasedLevel(world);
+                level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+            } else {
+                level = getWeightedRandomLevel();
+            }
         }
 
         float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
@@ -402,7 +477,16 @@ public class LuckyBlockHandlerPocket {
                 int maxLevelLocal = data.get("maxLevel").getAsInt();
                 level = random.nextBetween(minLevelLocal, maxLevelLocal + 1);
             } else {
-                level = getWeightedRandomLevel();
+                if (data.has("minLevel") && data.has("maxLevel")) {
+                    min = data.get("minLevel").getAsInt();
+                    max = data.get("maxLevel").getAsInt();
+                    level = random.nextBetween(min, max + 1);
+                } else if (!timeBasedLeveling.isEmpty()) {
+                    int timeBased = getTimeBasedLevel(world);
+                    level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+                } else {
+                    level = getWeightedRandomLevel();
+                }
             }
 
             JsonObject fakeData = new JsonObject();
@@ -477,7 +561,7 @@ public class LuckyBlockHandlerPocket {
         }
 
         var template = optional.get();
-        BlockPos placementPos = pos.west(4); 
+        BlockPos placementPos = pos.west(4);
 
         if (structureId.equals("luckblockcobblemon:luckornot")) {
             placementPos = placementPos.down(4);
@@ -485,6 +569,14 @@ public class LuckyBlockHandlerPocket {
         template.place(world, placementPos, placementPos,
                 new net.minecraft.structure.StructurePlacementData(),
                 random, 3);
+    }
+
+    private static JsonObject createLevelRange(int min, int max, float chance) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("min", min);
+        obj.addProperty("max", max);
+        obj.addProperty("chance", chance);
+        return obj;
     }
 
     private static JsonObject createStructureJson(String id, int weight) {
@@ -502,6 +594,7 @@ public class LuckyBlockHandlerPocket {
             // Item Vanilla
             JsonObject itemDrop = new JsonObject();
             itemDrop.addProperty("type", "item");
+            itemDrop.addProperty("__note", "Vanilla item drop. Customize the 'items' array with any Minecraft item ID. 'min' and 'max' control quantity. 'chance' is the chance percentage.");
             JsonArray items = new JsonArray();
             items.add("minecraft:diamond");
             items.add("minecraft:gold_ingot");
@@ -515,8 +608,9 @@ public class LuckyBlockHandlerPocket {
             // Estrutura
             JsonObject structureSpawn = new JsonObject();
             structureSpawn.addProperty("type", "structure");
+            structureSpawn.addProperty("__note", "Structure event. Add structures using 'id' and 'weight'. Higher weight = more frequent. Use this to spawn special buildings.");
             structureSpawn.addProperty("chance", 1F);
-            structureSpawn.addProperty("__note", "Você pode ajustar o peso (raridade) de cada estrutura aqui. Quanto maior o weight, mais comum será a estrutura.");
+
 
             JsonArray structures = new JsonArray();
             structures.add(createStructureJson("luckblockcobblemon:eletric_boss", 10));
@@ -535,6 +629,7 @@ public class LuckyBlockHandlerPocket {
             // Itens do Cobblemon
             JsonObject cobbleItemDrop = new JsonObject();
             cobbleItemDrop.addProperty("type", "cobbleitem");
+            cobbleItemDrop.addProperty("__note", "Cobblemon item drop. Edit the 'items' array with IDs from the Cobblemon mod (e.g., Poké Balls, Rare Candy).");
 
             JsonArray cobbleItems = new JsonArray();
             String[] pokeballsAndCandy = {
@@ -552,6 +647,22 @@ public class LuckyBlockHandlerPocket {
             cobbleItemDrop.addProperty("chance", 4F);
 
             pool.add(cobbleItemDrop);
+
+            JsonArray levelingStrategyNote = new JsonArray();
+            levelingStrategyNote.add("There are 3 ways to define Pokémon level for spawn events.");
+            levelingStrategyNote.add("Applies only to: 'cobblemonp', 'shiny_cobblemonp', 'random_cobblemonp', and 'multi_cobblemonp'.");
+            levelingStrategyNote.add("1. minLevel / maxLevel → Defined directly in the event.");
+            levelingStrategyNote.add("   Example: minLevel: 10, maxLevel: 50.");
+            levelingStrategyNote.add("   If present, this is always used.");
+            levelingStrategyNote.add("2. timeLeveling → If min/max are missing, uses world day ranges to decide.");
+            levelingStrategyNote.add("   Example: Days 0–20 = 90% chance for level 1–40, etc.");
+            levelingStrategyNote.add("3. levelWeighting → Global fallback level table.");
+            levelingStrategyNote.add("Priority:");
+            levelingStrategyNote.add("   1) minLevel/maxLevel (per event)");
+            levelingStrategyNote.add("   2) timeLeveling (based on world days)");
+            levelingStrategyNote.add("   3) levelWeighting (default)");
+            levelingStrategyNote.add("⚠️ Works only for specific Pokémon spawn types.");
+            defaultConfig.add("__note_leveling_strategy", levelingStrategyNote);
 
 
             // Cobblemon normal
@@ -578,7 +689,6 @@ public class LuckyBlockHandlerPocket {
             };
             for (String name : cobblemonList) cobblemons.add(name);
             cobblemonSpawn.add("cobblemons", cobblemons);
-            cobblemonSpawn.addProperty("__nota_min_max_level", "Você pode adicionar 'minLevel' e 'maxLevel' neste evento para definir um nível aleatório personalizado. Exemplo: minLevel: 10, maxLevel: 50. Se não definir, o sistema usará 'levelWeighting'.");
             cobblemonSpawn.addProperty("chance", 75F);
             pool.add(cobblemonSpawn);
 
@@ -587,7 +697,6 @@ public class LuckyBlockHandlerPocket {
             JsonObject shinySpawn = new JsonObject();
             shinySpawn.addProperty("type", "shiny_cobblemonp");
             shinySpawn.add("cobblemons", cobblemons.deepCopy());
-            shinySpawn.addProperty("__nota_min_max_level", "Você pode adicionar 'minLevel' e 'maxLevel' para controlar o nível dos Pokémon shiny. Exemplo: minLevel: 20, maxLevel: 60. Se omitido, será usado 'levelWeighting'.");
             shinySpawn.addProperty("chance", 1F);
             pool.add(shinySpawn);
 
@@ -595,7 +704,6 @@ public class LuckyBlockHandlerPocket {
             JsonObject randomCobblemonSpawn = new JsonObject();
             randomCobblemonSpawn.addProperty("type", "random_cobblemonp");
             randomCobblemonSpawn.addProperty("chance", 10F); // porcentagem de ativação
-            randomCobblemonSpawn.addProperty("__nota_min_max_level", "Este evento suporta 'minLevel' e 'maxLevel' para limitar o nível dos Pokémon aleatórios. Exemplo: minLevel: 30, maxLevel: 80.");
             randomCobblemonSpawn.addProperty("shinyChance", 0.02F);
             pool.add(randomCobblemonSpawn);
 
@@ -605,7 +713,6 @@ public class LuckyBlockHandlerPocket {
             multiCobblemonSpawn.addProperty("chance", 0.5F); // chance de ativação
             multiCobblemonSpawn.addProperty("min", 2);       // quantidade mínima
             multiCobblemonSpawn.addProperty("max", 5);       // quantidade máxima
-            multiCobblemonSpawn.addProperty("__nota_min_max_level", "Você pode adicionar 'minLevel' e 'maxLevel' para definir o nível aleatório de cada Pokémon no spawn múltiplo. Exemplo: minLevel: 5, maxLevel: 100.");
             multiCobblemonSpawn.addProperty("shinyChance", 0.02F); // chance shiny por Cobblemon
             pool.add(multiCobblemonSpawn);
 
@@ -618,6 +725,7 @@ public class LuckyBlockHandlerPocket {
             // Todos itens
             JsonObject allItemsDrop = new JsonObject();
             allItemsDrop.addProperty("type", "cobblemon_allitems");
+            allItemsDrop.addProperty("__note", "Drops a random item from the full list of Cobblemon items.");
 
             JsonArray allItems = new JsonArray();
             String[] cobblemonItemList = {
@@ -673,6 +781,7 @@ public class LuckyBlockHandlerPocket {
 
             // levelWeighting customizado
             JsonArray levelWeights = new JsonArray();
+            defaultConfig.addProperty("__note_levelWeighting", "This controls level probability when no minLevel/maxLevel is set. Total chances should ideally sum to 100.0.");
 
             JsonObject lv100 = new JsonObject();
             lv100.addProperty("min", 80);
@@ -700,6 +809,52 @@ public class LuckyBlockHandlerPocket {
 
             defaultConfig.add("levelWeighting", levelWeights);
 
+            // timeLeveling baseado nos dias do mundo
+            JsonArray timeLeveling = new JsonArray();
+            defaultConfig.addProperty("__note_timeLeveling", "Optional: Enables world-age-based scaling. The system will use these ranges based on how many days have passed in-game.");
+
+            JsonObject days0to20 = new JsonObject();
+            days0to20.addProperty("minDays", 0);
+            days0to20.addProperty("maxDays", 20);
+            JsonArray levels0to20 = new JsonArray();
+            levels0to20.add(createLevelRange(1, 40, 90.0f));
+            levels0to20.add(createLevelRange(41, 60, 9.0f));
+            levels0to20.add(createLevelRange(61, 100, 1.0f));
+            days0to20.add("levels", levels0to20);
+            timeLeveling.add(days0to20);
+
+            JsonObject days21to50 = new JsonObject();
+            days21to50.addProperty("minDays", 21);
+            days21to50.addProperty("maxDays", 50);
+            JsonArray levels21to50 = new JsonArray();
+            levels21to50.add(createLevelRange(1, 40, 60.0f));
+            levels21to50.add(createLevelRange(41, 60, 30.0f));
+            levels21to50.add(createLevelRange(61, 100, 10.0f));
+            days21to50.add("levels", levels21to50);
+            timeLeveling.add(days21to50);
+
+            JsonObject days51to100 = new JsonObject();
+            days51to100.addProperty("minDays", 51);
+            days51to100.addProperty("maxDays", 100);
+            JsonArray levels51to100 = new JsonArray();
+            levels51to100.add(createLevelRange(30, 60, 50.0f));
+            levels51to100.add(createLevelRange(61, 85, 35.0f));
+            levels51to100.add(createLevelRange(86, 100, 15.0f));
+            days51to100.add("levels", levels51to100);
+            timeLeveling.add(days51to100);
+
+            JsonObject days101plus = new JsonObject();
+            days101plus.addProperty("minDays", 101);
+            days101plus.addProperty("maxDays", 99999);
+            JsonArray levels101plus = new JsonArray();
+            levels101plus.add(createLevelRange(60, 85, 60.0f));
+            levels101plus.add(createLevelRange(86, 95, 30.0f));
+            levels101plus.add(createLevelRange(96, 100, 10.0f));
+            days101plus.add("levels", levels101plus);
+            timeLeveling.add(days101plus);
+
+// adiciona ao config principal
+            defaultConfig.add("timeLeveling", timeLeveling);
             // salva pool depois de adicionar todos eventos
             defaultConfig.add("luckPool", pool);
 

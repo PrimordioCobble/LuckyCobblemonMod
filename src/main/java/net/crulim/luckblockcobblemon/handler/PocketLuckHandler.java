@@ -26,7 +26,10 @@ public class PocketLuckHandler {
         System.out.println("[PocketLuckHandler] Pools recarregadas com sucesso.");
     }
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .create();
     private static final Map<String, List<JsonObject>> POOLS = new HashMap<>();
     private static final List<LevelRangeWeight> weightedLevels = new ArrayList<>();
     private static final Random random = Random.create();
@@ -112,24 +115,6 @@ public class PocketLuckHandler {
         }
     }
 
-    private static int getWeightedRandomLevel() {
-        float total = 0F;
-        for (LevelRangeWeight range : weightedLevels) {
-            total += range.chance;
-        }
-
-        float roll = random.nextFloat() * total;
-        float cumulative = 0F;
-
-        for (LevelRangeWeight range : weightedLevels) {
-            cumulative += range.chance;
-            if (roll < cumulative) {
-                return random.nextBetween(range.min, range.max + 1);
-            }
-        }
-
-        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1); // fallback
-    }
 
     private static List<JsonObject> loadOrCreate(String key) {
         File configDir = new File(FabricLoader.getInstance().getGameDir().toFile(), "config/luckblockpocket");
@@ -157,9 +142,136 @@ public class PocketLuckHandler {
         return obj;
     }
 
+    private static int getTimeBasedLevel(ServerWorld world, String type) {
+        long rawDays = world.getTimeOfDay() / 24000L;
+        long days = rawDays + 20; // simula o jogo já no dia 20
+
+        File configFile = new File("config/luckblockpocket/level_config.json");
+        if (!configFile.exists()) return -1;
+
+        try (Reader reader = new FileReader(configFile)) {
+            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+            String key = "timeLeveling_" + type;
+            if (!json.has(key)) return -1;
+
+            JsonArray timeLeveling = json.getAsJsonArray(key);
+            for (JsonElement el : timeLeveling) {
+                JsonObject obj = el.getAsJsonObject();
+                long min = obj.get("minDays").getAsLong();
+                long max = obj.get("maxDays").getAsLong();
+
+                if (days >= min && days <= max) {
+                    JsonArray levels = obj.getAsJsonArray("levels");
+
+                    float total = 0;
+                    for (JsonElement lvl : levels) {
+                        total += lvl.getAsJsonObject().get("chance").getAsFloat();
+                    }
+
+                    float roll = random.nextFloat() * total;
+                    float cumulative = 0;
+
+                    for (JsonElement lvl : levels) {
+                        JsonObject objLvl = lvl.getAsJsonObject();
+                        cumulative += objLvl.get("chance").getAsFloat();
+                        if (roll <= cumulative) {
+                            int minLevel = objLvl.get("min").getAsInt();
+                            int maxLevel = objLvl.get("max").getAsInt();
+                            return random.nextBetween(minLevel, maxLevel + 1);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    private static int getEffectiveLevel(ServerWorld world, JsonObject data, String type) {
+        // 1. minLevel/maxLevel direto no evento
+        if (data.has("minLevel") && data.has("maxLevel")) {
+            return random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt() + 1);
+        }
+
+        // 2. timeLeveling_<tipo> com +20 dias de offset
+        int timeLevel = getTimeBasedLevel(world, type);
+        if (timeLevel != -1) return timeLevel;
+
+        // 3. levelWeighting_<tipo>
+        List<LevelRangeWeight> typeWeights = getLevelWeightingByType(type);
+        if (!typeWeights.isEmpty()) {
+            return getWeightedRandomLevel(typeWeights);
+        }
+
+        // fallback padrão
+        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
+    }
+
+    private static JsonObject createLevelRange(int min, int max, float chance) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("min", min);
+        obj.addProperty("max", max);
+        obj.addProperty("chance", chance);
+        return obj;
+    }
+
+    private static JsonObject createLevelRange(int min, int max, int chance) {
+        return createLevelRange(min, max, (float) chance);
+    }
+
+    private static List<LevelRangeWeight> getLevelWeightingByType(String type) {
+        File configFile = new File("config/luckblockpocket/level_config.json");
+        if (!configFile.exists()) return Collections.emptyList();
+
+        try (Reader reader = new FileReader(configFile)) {
+            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+            String key = "levelWeighting_" + type;
+            if (!json.has(key)) return Collections.emptyList();
+
+            JsonArray arr = json.getAsJsonArray(key);
+            List<LevelRangeWeight> ranges = new ArrayList<>();
+            for (JsonElement el : arr) {
+                JsonObject obj = el.getAsJsonObject();
+                ranges.add(new LevelRangeWeight(
+                        obj.get("min").getAsInt(),
+                        obj.get("max").getAsInt(),
+                        obj.get("chance").getAsFloat()
+                ));
+            }
+            return ranges;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
+    }
+
+
+    private static int getWeightedRandomLevel(List<LevelRangeWeight> weights) {
+        float total = 0F;
+        for (LevelRangeWeight range : weights) {
+            total += range.chance;
+        }
+
+        float roll = random.nextFloat() * total;
+        float cumulative = 0F;
+
+        for (LevelRangeWeight range : weights) {
+            cumulative += range.chance;
+            if (roll < cumulative) {
+                return random.nextBetween(range.min, range.max + 1);
+            }
+        }
+
+        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
+    }
+
+
     private static void createDefault(File file, String key) {
         try {
             file.getParentFile().mkdirs();
+
             JsonArray array = new JsonArray();
 
             Map<String, List<String>> pokemonMap = Map.of(
@@ -232,7 +344,7 @@ public class PocketLuckHandler {
                             "regice", "glaceon", "mamoswine", "froslass", "vanillite",
                             "vanillish", "vanilluxe", "cubchoo", "beartic", "cryogonal",
                             "kyurem", "amaura", "aurorus", "bergmite", "avalugg",
-                            "crabominable", "eiscue", "arctozolt", "arctovish", "mr_rime",
+                            "crabominable", "eiscue", "arctozolt", "arctovish", "mrrime",
                             "glastrier", "cetoddle", "cetitan", "chien_pao"),
                     "fire", List.of("charmander", "charmeleon", "charizard",
                             "vulpix", "ninetales",
@@ -260,7 +372,7 @@ public class PocketLuckHandler {
                             "litleo", "pyroar",
                             "volcanion",
                             "litten", "torracat", "incineroar",
-                            "oricorio_baile",
+                            "oricoriobaile",
                             "salandit", "salazzle",
                             "turtonator",
                             "scorbunny", "raboot", "cinderace",
@@ -297,38 +409,38 @@ public class PocketLuckHandler {
                             "gliscor", "rhyperior", "gastrodon", "golett", "golurk", "landorus", "sandile", "krokorok",
                             "krookodile", "stunfisk", "palpitoad", "seismitoad", "excadrill", "drilbur", "mudbray", "mudsdale",
                             "silicobra", "sandaconda", "runerigus", "ursaluna", "toedscool", "toedscruel", "great_tusk",
-                            "iron_treads", "ting_lu", "clodsire",
+                            "irontreads", "ting_lu", "clodsire",
                             "mankey", "primeape", "machop", "machoke", "machamp", "hitmonlee", "hitmonchan", "poliwrath",
                             "heracross", "tyrogue", "hitmontop", "combusken", "blaziken", "breloom", "makuhita", "hariyama",
                             "meditite", "medicham", "monferno", "infernape", "riolu", "lucario", "gallade", "pignite",
                             "emboar", "throh", "sawk", "scraggy", "scrafty", "mienshao", "cobalion", "terrakion", "virizion",
                             "keldeo", "chesnaught", "hawlucha", "crabrawler", "crabominable", "passimian", "bewear",
-                            "sirfetchd", "zamazenta", "kubfu", "urshifu", "zamazenta_crowned", "iron_hands", "iron_valiant",
+                            "sirfetchd", "zamazenta", "kubfu", "urshifu", "zamazentacrowned", "iron_hands", "ironvaliant",
                             "annihilape", "quaquaval", "koraidon"),
                     "fly_dragon", List.of("pidgey", "pidgeotto", "pidgeot", "spearow", "fearow", "zubat", "golbat", "farfetchd", "doduo", "dodrio",
                             "scyther", "gyarados", "aerodactyl", "articuno", "zapdos", "moltres", "dragonite", "hoothoot", "noctowl",
-                            "crobat", "natu", "xatu", "murkrow", "gligar", "delibird", "skarmory", "lugia", "ho_oh", "tropius", "salamence",
+                            "crobat", "natu", "xatu", "murkrow", "gligar", "delibird", "skarmory", "lugia", "hooh", "tropius", "salamence",
                             "altaria", "rayquaza", "staraptor", "drifblim", "honchkrow", "togekiss", "yanmega", "gliscor", "braviary",
                             "mandibuzz", "noivern", "yveltal", "corviknight", "talonflame", "rookidee", "corvisquire", "noibat", "flapple",
-                            "dragapult", "kilowattrel", "bombirdier", "iron_jugulis", "roaring_moon"),
-                    "fairy_ghost_poison", List.of("clefairy", "clefable", "jigglypuff", "wigglytuff", "mr_mime", "snubbull", "granbull", "ralts",
+                            "dragapult", "kilowattrel", "bombirdier", "ironjugulis", "roaringmoon"),
+                    "fairy_ghost_poison", List.of("clefairy", "clefable", "jigglypuff", "wigglytuff", "mrmime", "snubbull", "granbull", "ralts",
                             "kirlia", "gardevoir", "azurill", "mawile", "aromatisse", "slurpuff", "florges", "sylveon", "mimikyu",
-                            "tapukoko", "tapulele", "tapu_bulu", "tapu_fini", "diancie", "primarina", "hatterene", "grimmsnarl", "flutter_mane",
+                            "tapukoko", "tapulele", "tapubulu", "tapufini", "diancie", "primarina", "hatterene", "grimmsnarl", "flutter_mane",
                             "gastly", "haunter", "gengar", "misdreavus", "mismagius", "shedinja", "sableye", "dusclops", "dusknoir", "froslass",
                             "yamask", "cofagrigus", "golurk", "phantump", "trevenant", "sandygast", "palossand", "dhelmise", "decidueye",
                             "runerigus", "spectrier", "basculegion", "anihilape", "greavard", "houndstone",
-                            "ekans", "arbok", "nidoran_f", "nidorina", "nidoqueen", "nidoran_m", "nidorino", "nidoking",
+                            "ekans", "arbok", "nidoranf", "nidorina", "nidoqueen", "nidoranm", "nidorino", "nidoking",
                             "zubat", "golbat", "venonat", "venomoth", "grimer", "muk", "koffing", "weezing", "gastly", "haunter", "gengar",
                             "crobat", "qwilfish", "dustox", "roselia", "skuntank", "toxicroak", "trubbish", "garbodor", "nihilego",
-                            "toxapex", "salandit", "salazzle", "poison_valiant", "glimmora"),
+                            "toxapex", "salandit", "salazzle", "poisonvaliant", "glimmora"),
                     "eletric_dark", List.of("pikachu", "raichu", "magnemite", "magneton", "voltorb", "electrode", "electabuzz", "jolteon", "zapdos",
                             "pichu", "mareep", "flaaffy", "ampharos", "elekid", "raikou", "plusle", "minun", "electrike", "manectric",
-                            "shinx", "luxio", "luxray", "rotom", "zekrom", "stunfisk", "helioptile", "heliolisk", "xurkitree", "tapu_koko",
+                            "shinx", "luxio", "luxray", "rotom", "zekrom", "stunfisk", "helioptile", "heliolisk", "xurkitree", "tapukoko",
                             "yamper", "boltund", "toxtricity", "pincurchin", "morpeko", "bellibolt", "ironhands", "raging_bolt",
                             "umbreon", "murkrow", "houndour", "houndoom", "tyranitar", "sableye", "carvanha", "sharpedo", "cacturne",
                             "absol", "crawdaunt", "honchkrow", "spiritomb", "drapion", "weavile", "darkrai", "bisharp", "pawniard",
                             "zorua", "zoroark", "yveltal", "inkay", "malamar", "greninja", "hoopa", "incineroar", "grimmsnarl",
-                            "obstagoon", "morpeko", "urshifu", "chien_pao", "kingambit"),
+                            "obstagoon", "morpeko", "urshifu", "chienpao", "kingambit"),
                     "steel_rock", List.of("magnemite", "magneton", "forretress", "steelix", "scizor", "skarmory", "mawile", "aron", "lairon", "aggron",
                             "beldum", "metang", "metagross", "registeel", "empoleon", "shieldon", "bastiodon", "bronzor", "bronzong",
                             "lucario", "magnezone", "probopass", "excadrill", "ferroseed", "ferrothorn", "durant", "cobalion", "honedge",
@@ -419,7 +531,7 @@ public class PocketLuckHandler {
                 pokemonDrop.addProperty("type", "pokemon");
                 pokemonDrop.add("pokemons", GSON.toJsonTree(pokemonMap.get(resolvedType)));
                 pokemonDrop.addProperty("shinyChance", 10);
-                pokemonDrop.addProperty("chance", 85); // nível será definido pelo levelWeighting_<tipo>
+                pokemonDrop.addProperty("chance", 85);
 
                 JsonObject itemDrop = new JsonObject();
                 itemDrop.addProperty("type", "item");
@@ -448,134 +560,198 @@ public class PocketLuckHandler {
 
             System.out.println("[PocketLuckHandler] Arquivo default criado: " + key);
 
-            // Geração automática do level_config.json com o grupo específico
+            // GERAÇÃO UNIFICADA DE lvlconfig_types.json
             if (resolvedType != null) {
-                File levelFile = new File("config/luckblockpocket/level_config.json");
+                File levelFile = new File("config/luckblockpocket/lvlconfig_types.json");
+                JsonObject finalJson;
 
-                JsonArray levelArray = new JsonArray();
-                levelArray.add(createLevelWeighting(85, 100, 5));
-                levelArray.add(createLevelWeighting(60, 84, 15));
-                levelArray.add(createLevelWeighting(30, 59, 30));
-                levelArray.add(createLevelWeighting(1, 29, 50));
+                if (levelFile.exists()) {
+                    finalJson = GSON.fromJson(new FileReader(levelFile), JsonObject.class);
+                } else {
+                    finalJson = new JsonObject();
+                    finalJson.add("minLevel", new JsonPrimitive(1));
+                    finalJson.add("maxLevel", new JsonPrimitive(100));
 
-                JsonObject levelJson = new JsonObject();
-                levelJson.add("levelWeighting_" + resolvedType, levelArray);
+// Adiciona o array de linhas explicativas como "_note"
+                    JsonArray note = new JsonArray();
+                    note.add("There are 3 ways to define Pokémon levels for Lucky Blocks:");
+                    note.add("1 - minLevel / maxLevel → If present in the event, defines the exact level range.");
+                    note.add("   Example: minLevel: 10, maxLevel: 30");
+                    note.add("2 - timeLeveling → If no min/max, the level is chosen based on the Minecraft world's age in days.");
+                    note.add("   It uses configured level ranges for day periods (0–20, 21–50, etc.).");
+                    note.add("3 - levelWeighting → If neither of the above is used, the system applies default level chances per block type (like fire, water_ice).");
+                    note.add("Priority order: minLevel/maxLevel > timeLeveling > levelWeighting.");
+                    note.add("This file (lvlconfig_types.json) controls all those settings.");
+                    finalJson.add("_note", note);
 
-                try {
-                    if (levelFile.exists()) {
-                        JsonObject existing = GSON.fromJson(new FileReader(levelFile), JsonObject.class);
-                        if (!existing.has("levelWeighting_" + resolvedType)) {
-                            existing.add("levelWeighting_" + resolvedType, levelArray);
-                            try (Writer writer = new FileWriter(levelFile)) {
-                                GSON.toJson(existing, writer);
-                            }
-                        }
-                    } else {
-                        try (Writer writer = new FileWriter(levelFile)) {
-                            GSON.toJson(levelJson, writer);
-                        }
+                    // timeLeveling base
+                    JsonArray timeLeveling = new JsonArray();
+
+                    JsonObject days0to20 = new JsonObject();
+                    days0to20.addProperty("minDays", 0);
+                    days0to20.addProperty("maxDays", 20);
+                    JsonArray levels0to20 = new JsonArray();
+                    levels0to20.add(createLevelRange(1, 40, 90.0f));
+                    levels0to20.add(createLevelRange(41, 60, 9.0f));
+                    levels0to20.add(createLevelRange(61, 100, 1.0f));
+                    days0to20.add("levels", levels0to20);
+                    timeLeveling.add(days0to20);
+
+                    JsonObject days21to50 = new JsonObject();
+                    days21to50.addProperty("minDays", 21);
+                    days21to50.addProperty("maxDays", 50);
+                    JsonArray levels21to50 = new JsonArray();
+                    levels21to50.add(createLevelRange(1, 40, 60.0f));
+                    levels21to50.add(createLevelRange(41, 60, 30.0f));
+                    levels21to50.add(createLevelRange(61, 100, 10.0f));
+                    days21to50.add("levels", levels21to50);
+                    timeLeveling.add(days21to50);
+
+                    JsonObject days51to100 = new JsonObject();
+                    days51to100.addProperty("minDays", 51);
+                    days51to100.addProperty("maxDays", 100);
+                    JsonArray levels51to100 = new JsonArray();
+                    levels51to100.add(createLevelRange(30, 60, 50.0f));
+                    levels51to100.add(createLevelRange(61, 85, 35.0f));
+                    levels51to100.add(createLevelRange(86, 100, 15.0f));
+                    days51to100.add("levels", levels51to100);
+                    timeLeveling.add(days51to100);
+
+                    JsonObject days101plus = new JsonObject();
+                    days101plus.addProperty("minDays", 101);
+                    days101plus.addProperty("maxDays", 99999);
+                    JsonArray levels101plus = new JsonArray();
+                    levels101plus.add(createLevelRange(60, 85, 60.0f));
+                    levels101plus.add(createLevelRange(86, 95, 30.0f));
+                    levels101plus.add(createLevelRange(96, 100, 10.0f));
+                    days101plus.add("levels", levels101plus);
+                    timeLeveling.add(days101plus);
+
+                    finalJson.add("timeLeveling", timeLeveling);
+                }
+
+                // Só adiciona levelWeighting_<tipo> se não existir
+                String lwKey = "levelWeighting_" + resolvedType;
+                if (!finalJson.has(lwKey)) {
+                    JsonArray weighting = new JsonArray();
+                    weighting.add(createLevelRange(85, 100, 5));
+                    weighting.add(createLevelRange(60, 84, 15));
+                    weighting.add(createLevelRange(30, 59, 30));
+                    weighting.add(createLevelRange(1, 29, 50));
+                    finalJson.add(lwKey, weighting);
+
+                    try (Writer writer = new FileWriter(levelFile)) {
+                        GSON.toJson(finalJson, writer);
+                        System.out.println("[PocketLuckHandler] lvlconfig_types.json atualizado com " + lwKey);
                     }
-
-                    System.out.println("[PocketLuckHandler] levelWeighting_" + resolvedType + " gerado.");
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
+
 
 
     private static JsonObject pick(List<JsonObject> pool) {
-    double total = 0;
-    for (JsonObject obj : pool) {
-        total += obj.get("chance").getAsDouble();
-    }
-
-    double roll = random.nextDouble() * total;
-    double cumulative = 0;
-
-    for (JsonObject obj : pool) {
-        cumulative += obj.get("chance").getAsDouble();
-        if (roll <= cumulative) return obj;
-    }
-
-    return null;
-}
-
-private static void dropItems(ServerWorld world, BlockPos pos, JsonObject data) {
-    if (!data.has("items")) return;
-
-    JsonArray array = data.getAsJsonArray("items");
-    int min = data.has("min") ? data.get("min").getAsInt() : 1;
-    int max = data.has("max") ? data.get("max").getAsInt() : min;
-    int amount = random.nextBetween(min, max);
-
-    for (int i = 0; i < amount; i++) {
-        String itemId = array.get(random.nextInt(array.size())).getAsString();
-        Identifier id = Identifier.tryParse(itemId);
-        if (!Registries.ITEM.containsId(id)) {
-            System.out.println("[PocketLuckHandler] Item desconhecido: " + itemId);
-            continue;
+        double total = 0;
+        for (JsonObject obj : pool) {
+            total += obj.get("chance").getAsDouble();
         }
-        ItemStack stack = new ItemStack(Registries.ITEM.get(id));
-        ItemEntity entity = new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, stack);
-        world.spawnEntity(entity);
-    }
-}
 
-private static void spawnPokemon(ServerWorld world, BlockPos pos, JsonObject data, boolean forceShiny) {
-    if (!data.has("pokemons")) {
-        System.out.println("[PocketLuckHandler] Nenhuma lista de pokemons encontrada.");
-        return;
-    }
+        double roll = random.nextDouble() * total;
+        double cumulative = 0;
 
-    JsonArray pokemons = data.getAsJsonArray("pokemons");
-    if (pokemons.isEmpty()) return;
+        for (JsonObject obj : pool) {
+            cumulative += obj.get("chance").getAsDouble();
+            if (roll <= cumulative) return obj;
+        }
 
-    String speciesName = pokemons.get(random.nextInt(pokemons.size())).getAsString();
-    speciesName = normalizeSpeciesName(speciesName);
-
-    Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
-    if (species == null) {
-        System.out.println("[PocketLuckHandler] Pokémon inválido: " + speciesName);
-        return;
+        return null;
     }
 
-    Pokemon pokemon = new Pokemon();
-    pokemon.setSpecies(species);
+    private static void dropItems(ServerWorld world, BlockPos pos, JsonObject data) {
+        if (!data.has("items")) return;
 
-    int level;
-    if (data.has("minLevel") && data.has("maxLevel")) {
-        level = random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt() + 1);
-    } else if (!weightedLevels.isEmpty()) {
-        level = getWeightedRandomLevel();
-    } else {
-        level = random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
-    }
-    pokemon.setLevel(level);
+        JsonArray array = data.getAsJsonArray("items");
+        int min = data.has("min") ? data.get("min").getAsInt() : 1;
+        int max = data.has("max") ? data.get("max").getAsInt() : min;
+        int amount = random.nextBetween(min, max);
 
-    float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
-    boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChance);
-    pokemon.setShiny(isShiny);
-
-    Vec3d spawnPos = Vec3d.ofCenter(pos).add(0, 1, 0);
-    PokemonEntity entity = pokemon.sendOut(world, spawnPos, null, e -> null);
-
-    if (entity == null) {
-        System.out.println("[PocketLuckHandler] Falha ao spawnar Pokémon: " + speciesName);
-        return;
+        for (int i = 0; i < amount; i++) {
+            String itemId = array.get(random.nextInt(array.size())).getAsString();
+            Identifier id = Identifier.tryParse(itemId);
+            if (!Registries.ITEM.containsId(id)) {
+                System.out.println("[PocketLuckHandler] Item desconhecido: " + itemId);
+                continue;
+            }
+            ItemStack stack = new ItemStack(Registries.ITEM.get(id));
+            ItemEntity entity = new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, stack);
+            world.spawnEntity(entity);
+        }
     }
 
-    if (data.has("aggressive") && data.get("aggressive").getAsBoolean()) {
-        entity.setPersistent();
-        entity.setTarget(world.getClosestPlayer(spawnPos.x, spawnPos.y, spawnPos.z, 16, false));
-    }
-}
+    private static String getTypeFromBlockName(BlockPos pos, ServerWorld world) {
+        String blockId = world.getBlockState(pos).getBlock().toString().toLowerCase();
 
-private static String normalizeSpeciesName(String name) {
-    return name.toLowerCase().replace(" ", "_").replace("-", "_");
-}
+        if (blockId.contains("fire")) return "fire";
+        if (blockId.contains("water") || blockId.contains("ice")) return "water_ice";
+        if (blockId.contains("grass") || blockId.contains("bug")) return "grass_bug";
+        if (blockId.contains("ground") || blockId.contains("fighting")) return "ground_fighting";
+        if (blockId.contains("fly") || blockId.contains("dragon")) return "fly_dragon";
+        if (blockId.contains("fairy") || blockId.contains("ghost") || blockId.contains("poison")) return "fairy_ghost_poison";
+        if (blockId.contains("eletric") || blockId.contains("dark")) return "eletric_dark";
+        if (blockId.contains("steel") || blockId.contains("rock")) return "steel_rock";
+
+        return "default";
+    }
+
+    private static void spawnPokemon(ServerWorld world, BlockPos pos, JsonObject data, boolean forceShiny) {
+        if (!data.has("pokemons")) {
+            System.out.println("[PocketLuckHandler] Nenhuma lista de pokemons encontrada.");
+            return;
+        }
+
+        JsonArray pokemons = data.getAsJsonArray("pokemons");
+        if (pokemons.isEmpty()) return;
+
+        String speciesName = pokemons.get(random.nextInt(pokemons.size())).getAsString();
+        speciesName = normalizeSpeciesName(speciesName);
+
+        Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
+        if (species == null) {
+            System.out.println("[PocketLuckHandler] Pokémon inválido: " + speciesName);
+            return;
+        }
+
+        Pokemon pokemon = new Pokemon();
+        pokemon.setSpecies(species);
+
+        String typeKey = getTypeFromBlockName(pos, world);
+        int level = getEffectiveLevel(world, data, typeKey);
+        pokemon.setLevel(level);
+
+        float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
+        boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChance);
+        pokemon.setShiny(isShiny);
+
+        Vec3d spawnPos = Vec3d.ofCenter(pos).add(0, 1, 0);
+        PokemonEntity entity = pokemon.sendOut(world, spawnPos, null, e -> null);
+
+        if (entity == null) {
+            System.out.println("[PocketLuckHandler] Falha ao spawnar Pokémon: " + speciesName);
+            return;
+        }
+
+        if (data.has("aggressive") && data.get("aggressive").getAsBoolean()) {
+            entity.setPersistent();
+            entity.setTarget(world.getClosestPlayer(spawnPos.x, spawnPos.y, spawnPos.z, 16, false));
+        }
+    }
+
+    private static String normalizeSpeciesName(String name) {
+        return name.toLowerCase().replace(" ", "_").replace("-", "_");
+    }
 }

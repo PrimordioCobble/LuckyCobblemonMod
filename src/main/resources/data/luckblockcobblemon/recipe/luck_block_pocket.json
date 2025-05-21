@@ -9,7 +9,7 @@
         "item": "minecraft:gold_block"
         },
         "H": {
-        "item": "minecraft:crafter"
+        "item": "minecraft:chest"
         }
     },
     "pattern": [
