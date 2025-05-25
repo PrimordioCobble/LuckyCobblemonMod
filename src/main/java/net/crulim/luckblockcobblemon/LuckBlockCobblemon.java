@@ -30,7 +30,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 	public static final StructureProcessorType<AdaptiveBlockProcessor> ADAPTIVE_BLOCK_PROCESSOR =
 			Registry.register(
 					Registries.STRUCTURE_PROCESSOR,
-					new Identifier(MOD_ID, "adaptive_block_processor"),
+					Identifier.of(MOD_ID, "adaptive_block_processor"),
 					() -> AdaptiveBlockProcessor.CODEC
 			);
 

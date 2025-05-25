@@ -21,13 +21,6 @@ import net.minecraft.sound.BlockSoundGroup;
 
 public class ModBlocks {
 
-    //public static final Block LUCK_BASE = registerBlock("luck_base",new LuckClass(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
-
-
-
-
-    // public static final Block LUCKY_BLOCK_COBBLE = registerBlock("lucky_block_cobble", new CobbleLuckyBlock());
-
     public static final Block LUCK_BLOCK_POCKET = registerBlock("luck_block_pocket",
             new LuckBlockPocket(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
 
@@ -57,7 +50,6 @@ public class ModBlocks {
 
     public static final Block LUCK_BLOCK_POCKET_FAIRY = registerBlock("luck_block_pocket_fairy",
             new PocketLuckBlock(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
-
 
 
 

@@ -1,14 +1,14 @@
 {
   "structures": [
-    { "structure": "luckblockcobblemon:luckblockrandom1", "weight": 4 },
-    { "structure": "luckblockcobblemon:luckblockrandom2", "weight": 1 },
-    { "structure": "luckblockcobblemon:luckblockrandom3", "weight": 4 },
-    { "structure": "luckblockcobblemon:luckblockrandom4", "weight": 1 }
+    { "structure": "luckblockcobblemon:luckblockrandom1", "weight": 3 },
+    { "structure": "luckblockcobblemon:luckblockrandom2", "weight": 2 },
+    { "structure": "luckblockcobblemon:luckblockrandom3", "weight": 3 },
+    { "structure": "luckblockcobblemon:luckblockrandom4", "weight": 2 }
   ],
   "placement": {
     "salt": 1234567890,
-    "spacing": 60,
-    "separation": 30,
+    "spacing": 40,
+    "separation": 20,
     "type": "minecraft:random_spread"
   }
 }
