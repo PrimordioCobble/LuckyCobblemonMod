@@ -19,7 +19,7 @@ public class ModItemGroups {
                     .entries((displayContext, entries) -> {
                         // entries.add(ModBlocks.LUCK_BASE);
                         // entries.add(ModBlocks.LUCKY_BLOCK_COBBLE);
-                        // entries.add(ModBlocks.LUCK_BLOCK_VANILLA);
+                        entries.add(ModBlocks.LUCK_BLOCK_VANILLA);
                         entries.add(ModBlocks.LUCK_BLOCK_POCKET);
                         entries.add(ModBlocks.LUCK_BLOCK_POCKET_FIRE);
                         entries.add(ModBlocks.LUCK_BLOCK_POCKET_GRASS);
@@ -29,7 +29,6 @@ public class ModItemGroups {
                         entries.add(ModBlocks.LUCK_BLOCK_POCKET_FLY);
                         entries.add(ModBlocks.LUCK_BLOCK_POCKET_FAIRY);
                         entries.add(ModBlocks.LUCK_BLOCK_POCKET_ELETRIC);
-                        entries.add(ModBlocks.OBSIDIAN_LEAF);
 
                     })
                     .build());

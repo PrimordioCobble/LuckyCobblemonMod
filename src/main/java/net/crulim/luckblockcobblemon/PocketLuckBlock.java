@@ -18,11 +18,15 @@ public class PocketLuckBlock extends Block {
 
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+        if (player.isCreative() && !PocketLuckHandler.isBreakCreativeAllowed()) {
+            // Se não pode quebrar em criativo, só retorna o super e não executa evento nenhum.
+            return super.onBreak(world, pos, state, player);
+        }
+
         if (!world.isClient() && world instanceof ServerWorld serverWorld) {
             Identifier blockId = Registries.BLOCK.getId(state.getBlock());
             PocketLuckHandler.trigger(serverWorld, pos, blockId);
         }
-
         return super.onBreak(world, pos, state, player);
     }
 }

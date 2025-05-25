@@ -33,7 +33,7 @@ public class LuckyBlockHandlerPocket {
             .disableHtmlEscaping()  // <- isso resolve!
             .create();
     private static final Random random = Random.create();
-    private static final String CONFIG_PATH = "config/luckpocket_config.json";
+    private static final String CONFIG_PATH = "config/luckyblock_config.json";
     private static final Logger LOGGER = Logger.getLogger(LuckyBlockHandlerPocket.class.getName());
 
     private static final List<JsonObject> luckPool = new ArrayList<>();
@@ -41,6 +41,12 @@ public class LuckyBlockHandlerPocket {
     private static int maxLevel = 30;
     private static float shinyChancePercent = 5.0F;
     private static final List<TimeBasedLevelRange> timeBasedLeveling = new ArrayList<>();
+
+    private static boolean breakCreative = false;
+
+    public static boolean isBreakCreativeAllowed() {
+        return breakCreative;
+    }
 
     private static class TimeBasedLevelRange {
         int minDays;
@@ -64,6 +70,8 @@ public class LuckyBlockHandlerPocket {
             JsonObject json = JsonParser.parseReader(
                     new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)
             ).getAsJsonObject();
+
+            breakCreative = json.has("breakCreative") && json.get("breakCreative").getAsBoolean();
 
             // Limpa os pools anteriores
             luckPool.clear();
@@ -590,6 +598,15 @@ public class LuckyBlockHandlerPocket {
         try {
             JsonObject defaultConfig = new JsonObject();
             JsonArray pool = new JsonArray();
+            defaultConfig.addProperty("breakCreative", false);
+
+            JsonArray note = new JsonArray();
+            note.add("INFO: The 'breakCreative' property controls whether Lucky Blocks can be broken in creative mode.");
+            note.add("If set to true, players in creative mode will be able to break and activate Lucky Blocks.");
+            note.add("If set to false, Lucky Blocks cannot be activated in creative mode.");
+            note.add("This config is GLOBAL and only read from lvlconfig_types.json (or level_config.json depending on your system).");
+
+            defaultConfig.add("_note", note);
 
             // Item Vanilla
             JsonObject itemDrop = new JsonObject();
@@ -633,11 +650,10 @@ public class LuckyBlockHandlerPocket {
 
             JsonArray cobbleItems = new JsonArray();
             String[] pokeballsAndCandy = {
-                    "cobblemon:pokeball", "cobblemon:great_ball", "cobblemon:ultra_ball", "cobblemon:quick_ball",
-                    "cobblemon:dusk_ball", "cobblemon:repeat_ball", "cobblemon:timer_ball", "cobblemon:nest_ball",
-                    "cobblemon:net_ball", "cobblemon:luxury_ball", "cobblemon:heal_ball", "cobblemon:friend_ball",
-                    "cobblemon:level_ball", "cobblemon:moon_ball", "cobblemon:love_ball", "cobblemon:heavy_ball",
-                    "cobblemon:fast_ball", "cobblemon:safari_ball", "cobblemon:rare_candy"
+                    "cobblemon:ancient_azure_ball", "cobblemon:ancient_citrine_ball", "cobblemon:ancient_feather_ball", "cobblemon:ancient_gigaton_ball", "cobblemon:ancient_great_ball", "cobblemon:ancient_heavy_ball", "cobblemon:ancient_ivory_ball", "cobblemon:ancient_jet_ball", "cobblemon:ancient_leaden_ball", "cobblemon:ancient_origin_ball", "cobblemon:ancient_poke_ball", "cobblemon:ancient_roseate_ball", "cobblemon:ancient_slate_ball", "cobblemon:ancient_ultra_ball", "cobblemon:ancient_verdant_ball", "cobblemon:ancient_wing_ball", "cobblemon:azure_ball", "cobblemon:beast_ball", "cobblemon:cherish_ball", "cobblemon:citrine_ball", "cobblemon:dive_ball", "cobblemon:dream_ball", "cobblemon:dusk_ball", "cobblemon:fast_ball", "cobblemon:friend_ball", "cobblemon:great_ball", "cobblemon:heal_ball", "cobblemon:heavy_ball", "cobblemon:level_ball", "cobblemon:love_ball", "cobblemon:lure_ball", "cobblemon:luxury_ball", "cobblemon:master_ball", "cobblemon:moon_ball", "cobblemon:nest_ball", "cobblemon:net_ball", "cobblemon:park_ball", "cobblemon:poke_ball", "cobblemon:premier_ball", "cobblemon:quick_ball", "cobblemon:repeat_ball", "cobblemon:roseate_ball", "cobblemon:safari_ball", "cobblemon:slate_ball", "cobblemon:sport_ball", "cobblemon:timer_ball", "cobblemon:ultra_ball", "cobblemon:verdant_ball", "cobblemon:vivichoke_seeds",
+                    "cobblemon:exp_candy_l", "cobblemon:exp_candy_m", "cobblemon:exp_candy_s", "cobblemon:exp_candy_xl", "cobblemon:exp_candy_xs", "cobblemon:rare_candy"
+
+
             };
             for (String item : pokeballsAndCandy) cobbleItems.add(item);
 
@@ -670,26 +686,12 @@ public class LuckyBlockHandlerPocket {
             cobblemonSpawn.addProperty("type", "cobblemonp");
             JsonArray cobblemons = new JsonArray();
             String[] cobblemonList = {
-                    "bulbasaur","ivysaur","venusaur","charmander","charmeleon","charizard","squirtle","wartortle","blastoise",
-                    "caterpie","metapod","butterfree","weedle","kakuna","beedrill","pidgey","pidgeotto","pidgeot","rattata",
-                    "raticate","spearow","fearow","ekans","arbok","pikachu","raichu","sandshrew","sandslash","nidoranf",
-                    "nidorina","nidoqueen","nidoranm","nidorino","nidoking","clefairy","clefable","vulpix","ninetales",
-                    "jigglypuff","wigglytuff","zubat","golbat","oddish","gloom","vileplume","paras","parasect","venonat",
-                    "venomoth","diglett","dugtrio","meowth","persian","psyduck","golduck","mankey","primeape","growlithe",
-                    "arcanine","poliwag","poliwhirl","poliwrath","abra","kadabra","alakazam","machop","machoke","machamp",
-                    "bellsprout","weepinbell","victreebel","tentacool","tentacruel","geodude","graveler","golem","ponyta",
-                    "rapidash","slowpoke","slowbro","magnemite","magneton","farfetchd","doduo","dodrio","seel","dewgong",
-                    "grimer","muk","shellder","cloyster","gastly","haunter","gengar","onix","drowzee","hypno","krabby",
-                    "kingler","voltorb","electrode","exeggcute","exeggutor","cubone","marowak","hitmonlee","hitmonchan",
-                    "lickitung","koffing","weezing","rhyhorn","rhydon","chansey","tangela","kangaskhan","horsea","seadra",
-                    "goldeen","seaking","staryu","starmie","mrmime","scyther","jynx","electabuzz","magmar","pinsir","tauros",
-                    "magikarp","gyarados","lapras","ditto","eevee","vaporeon","jolteon","flareon","porygon","omanyte","omastar",
-                    "kabuto","kabutops","aerodactyl","snorlax","articuno","zapdos","moltres","dratini","dragonair","dragonite",
-                    "mewtwo","mew"
+                    "bulbasaur","ivysaur","venusaur","charmander","charmeleon","charizard","squirtle","wartortle","blastoise"
+
             };
             for (String name : cobblemonList) cobblemons.add(name);
             cobblemonSpawn.add("cobblemons", cobblemons);
-            cobblemonSpawn.addProperty("chance", 75F);
+            cobblemonSpawn.addProperty("chance", 10F);
             pool.add(cobblemonSpawn);
 
 
@@ -703,17 +705,17 @@ public class LuckyBlockHandlerPocket {
             // Random Cobblemon
             JsonObject randomCobblemonSpawn = new JsonObject();
             randomCobblemonSpawn.addProperty("type", "random_cobblemonp");
-            randomCobblemonSpawn.addProperty("chance", 10F); // porcentagem de ativação
+            randomCobblemonSpawn.addProperty("chance", 75F);
             randomCobblemonSpawn.addProperty("shinyChance", 0.02F);
             pool.add(randomCobblemonSpawn);
 
             // Múltiplos Cobblemon aleatórios
             JsonObject multiCobblemonSpawn = new JsonObject();
             multiCobblemonSpawn.addProperty("type", "multi_cobblemonp");
-            multiCobblemonSpawn.addProperty("chance", 0.5F); // chance de ativação
-            multiCobblemonSpawn.addProperty("min", 2);       // quantidade mínima
-            multiCobblemonSpawn.addProperty("max", 5);       // quantidade máxima
-            multiCobblemonSpawn.addProperty("shinyChance", 0.02F); // chance shiny por Cobblemon
+            multiCobblemonSpawn.addProperty("min", 4);       // quantidade mínima
+            multiCobblemonSpawn.addProperty("max", 8);       // quantidade máxima
+            multiCobblemonSpawn.addProperty("chance", 3F);
+            multiCobblemonSpawn.addProperty("shinyChance", 0.02F);
             pool.add(multiCobblemonSpawn);
 
 
@@ -729,45 +731,12 @@ public class LuckyBlockHandlerPocket {
 
             JsonArray allItems = new JsonArray();
             String[] cobblemonItemList = {
-                    "cobblemon:ability_capsule", "cobblemon:ability_patch", "cobblemon:ability_shield",
-                    "cobblemon:absorb_bulb", "cobblemon:air_balloon", "cobblemon:ancient_pokeball",
-                    "cobblemon:antidote", "cobblemon:apricorn", "cobblemon:assault_vest",
-                    "cobblemon:auspicious_armor", "cobblemon:awakening", "cobblemon:berry",
-                    "cobblemon:berry_juice", "cobblemon:big_root", "cobblemon:binding_band",
-                    "cobblemon:black_augurite", "cobblemon:black_belt", "cobblemon:black_glasses",
-                    "cobblemon:black_sludge", "cobblemon:blunder_policy", "cobblemon:braised_vivichoke",
-                    "cobblemon:bright_powder", "cobblemon:burn_heal", "cobblemon:calcium",
-                    "cobblemon:carbos", "cobblemon:cell_battery", "cobblemon:charcoal_stick",
-                    "cobblemon:chipped_pot", "cobblemon:choice_band", "cobblemon:choice_scarf",
-                    "cobblemon:choice_specs", "cobblemon:cleanse_tag", "cobblemon:covert_cloak",
-                    "cobblemon:cracked_pot", "cobblemon:damp_rock", "cobblemon:dawn_stone",
-                    "cobblemon:dawn_stone_shard", "cobblemon:deep_sea_scale", "cobblemon:deep_sea_tooth",
-                    "cobblemon:destiny_knot", "cobblemon:dire_hit", "cobblemon:dragon_fang",
-                    "cobblemon:dragon_scale", "cobblemon:dragon_scale_fragment", "cobblemon:dubious_disc",
-                    "cobblemon:dubious_disc_fragment", "cobblemon:dusk_stone", "cobblemon:dusk_stone_shard",
-                    "cobblemon:eject_button", "cobblemon:eject_pack", "cobblemon:electirizer",
-                    "cobblemon:electirizer_fragment", "cobblemon:elixir", "cobblemon:ether",
-                    "cobblemon:everstone", "cobblemon:everstone_fragment", "cobblemon:eviolite",
-                    "cobblemon:evolution_stone", "cobblemon:exp_candy", "cobblemon:exp_candy_l",
-                    "cobblemon:exp_candy_m", "cobblemon:exp_candy_s", "cobblemon:exp_candy_xl",
-                    "cobblemon:exp_candy_xs", "cobblemon:exp_share", "cobblemon:expert_belt",
-                    "cobblemon:fairy_feather", "cobblemon:feather", "cobblemon:fine_remedy",
-                    "cobblemon:flame_orb", "cobblemon:float_stone", "cobblemon:focus_band",
-                    "cobblemon:focus_sash", "cobblemon:fossil", "cobblemon:full_heal",
-                    "cobblemon:full_restore", "cobblemon:fire_stone", "cobblemon:fire_stone_shard",
-                    "cobblemon:ice_stone", "cobblemon:ice_stone_shard", "cobblemon:king_s_rock",
-                    "cobblemon:king_s_rock_fragment", "cobblemon:leaf_stone", "cobblemon:leaf_stone_shard",
-                    "cobblemon:magmarizer", "cobblemon:magmarizer_fragment", "cobblemon:metal_coat",
-                    "cobblemon:metal_coat_fragment", "cobblemon:moon_stone", "cobblemon:moon_stone_shard",
-                    "cobblemon:oval_stone", "cobblemon:prism_scale", "cobblemon:prism_scale_fragment",
-                    "cobblemon:protector", "cobblemon:protector_fragment", "cobblemon:rare_candy",
-                    "cobblemon:razor_claw", "cobblemon:razor_claw_fragment", "cobblemon:razor_fang",
-                    "cobblemon:razor_fang_fragment", "cobblemon:reaper_cloth", "cobblemon:reaper_cloth_fragment",
-                    "cobblemon:sachet", "cobblemon:sachet_fragment", "cobblemon:shiny_stone",
-                    "cobblemon:shiny_stone_shard", "cobblemon:sun_stone", "cobblemon:sun_stone_shard",
-                    "cobblemon:thunder_stone", "cobblemon:thunder_stone_shard", "cobblemon:upgrade",
-                    "cobblemon:upgrade_fragment", "cobblemon:water_stone", "cobblemon:water_stone_shard",
-                    "cobblemon:whipped_dream", "cobblemon:whipped_dream_fragment", "cobblemon:master_ball"
+                    "cobblemon:ability_shield", "cobblemon:absorb_bulb", "cobblemon:air_balloon", "cobblemon:amulet_coin", "cobblemon:assault_vest", "cobblemon:big_root", "cobblemon:binding_band", "cobblemon:black_belt", "cobblemon:black_glasses", "cobblemon:black_sludge", "cobblemon:blunder_policy", "cobblemon:bright_powder", "cobblemon:cell_battery", "cobblemon:charcoal", "cobblemon:charcoal_stick", "cobblemon:choice_band", "cobblemon:choice_scarf", "cobblemon:choice_specs", "cobblemon:cleanse_tag", "cobblemon:clear_amulet", "cobblemon:covert_cloak", "cobblemon:damp_rock", "cobblemon:destiny_knot", "cobblemon:dragon_fang", "cobblemon:eject_button", "cobblemon:eject_pack", "cobblemon:electric_seed", "cobblemon:everstone", "cobblemon:eviolite", "cobblemon:expert_belt", "cobblemon:exp_share", "cobblemon:fairy_feather", "cobblemon:flame_orb", "cobblemon:float_stone", "cobblemon:focus_band", "cobblemon:focus_sash", "cobblemon:grassy_seed", "cobblemon:grip_claw", "cobblemon:hard_stone", "cobblemon:heat_rock", "cobblemon:heavy_duty_boots", "cobblemon:icy_rock", "cobblemon:iron_ball", "cobblemon:lagging_tail", "cobblemon:leftovers", "cobblemon:life_orb", "cobblemon:light_ball", "cobblemon:light_clay", "cobblemon:loaded_dice", "cobblemon:lucky_egg", "cobblemon:luminous_moss", "cobblemon:magnet", "cobblemon:mental_herb", "cobblemon:metal_powder", "cobblemon:metronome", "cobblemon:miracle_seed", "cobblemon:mirror_herb", "cobblemon:misty_seed", "cobblemon:muscle_band", "cobblemon:mystic_water", "cobblemon:never_melt_ice", "cobblemon:poison_barb", "cobblemon:power_anklet", "cobblemon:power_band", "cobblemon:power_belt", "cobblemon:power_bracer", "cobblemon:power_herb", "cobblemon:power_lens", "cobblemon:power_weight", "cobblemon:protective_pads", "cobblemon:psychic_seed", "cobblemon:punching_glove", "cobblemon:quick_claw", "cobblemon:quick_powder", "cobblemon:red_card", "cobblemon:ring_target", "cobblemon:rocky_helmet", "cobblemon:room_service", "cobblemon:safety_goggles", "cobblemon:scope_lens", "cobblemon:sharp_beak", "cobblemon:shed_shell", "cobblemon:shell_bell", "cobblemon:silk_scarf", "cobblemon:silver_powder", "cobblemon:smoke_ball", "cobblemon:smooth_rock", "cobblemon:soft_sand", "cobblemon:soothe_bell", "cobblemon:spell_tag", "cobblemon:sticky_barb", "cobblemon:terrain_extender", "cobblemon:throat_spray", "cobblemon:toxic_orb", "cobblemon:twisted_spoon", "cobblemon:utility_umbrella", "cobblemon:weakness_policy", "cobblemon:white_herb", "cobblemon:wide_lens", "cobblemon:wise_glasses", "cobblemon:zoom_lens",
+                    "cobblemon:auspicious_armor", "cobblemon:berry_sweet", "cobblemon:black_augurite", "cobblemon:chipped_pot", "cobblemon:clover_sweet", "cobblemon:cracked_pot", "cobblemon:dawn_stone", "cobblemon:deep_sea_scale", "cobblemon:deep_sea_tooth", "cobblemon:dragon_scale", "cobblemon:dubious_disc", "cobblemon:dusk_stone", "cobblemon:electirizer", "cobblemon:fire_stone", "cobblemon:flower_sweet", "cobblemon:galarica_cuff", "cobblemon:galarica_wreath", "cobblemon:ice_stone", "cobblemon:kings_rock", "cobblemon:leaf_stone", "cobblemon:link_cable", "cobblemon:love_sweet", "cobblemon:magmarizer", "cobblemon:malicious_armor", "cobblemon:masterpiece_teacup", "cobblemon:metal_alloy", "cobblemon:metal_coat", "cobblemon:moon_stone", "cobblemon:oval_stone", "cobblemon:peat_block", "cobblemon:prism_scale", "cobblemon:protector", "cobblemon:razor_claw", "cobblemon:razor_fang", "cobblemon:reaper_cloth", "cobblemon:ribbon_sweet", "cobblemon:sachet", "cobblemon:scroll_of_darkness", "cobblemon:scroll_of_waters", "cobblemon:shell_helmet", "cobblemon:shiny_stone", "cobblemon:star_sweet", "cobblemon:strawberry_sweet", "cobblemon:sun_stone", "cobblemon:sweet_apple", "cobblemon:syrupy_apple", "cobblemon:tart_apple", "cobblemon:thunder_stone", "cobblemon:unremarkable_teacup", "cobblemon:upgrade", "cobblemon:water_stone", "cobblemon:whipped_dream",
+                    "cobblemon:ancient_azure_ball", "cobblemon:ancient_citrine_ball", "cobblemon:ancient_feather_ball", "cobblemon:ancient_gigaton_ball", "cobblemon:ancient_great_ball", "cobblemon:ancient_heavy_ball", "cobblemon:ancient_ivory_ball", "cobblemon:ancient_jet_ball", "cobblemon:ancient_leaden_ball", "cobblemon:ancient_origin_ball", "cobblemon:ancient_poke_ball", "cobblemon:ancient_roseate_ball", "cobblemon:ancient_slate_ball", "cobblemon:ancient_ultra_ball", "cobblemon:ancient_verdant_ball", "cobblemon:ancient_wing_ball", "cobblemon:azure_ball", "cobblemon:beast_ball", "cobblemon:cherish_ball", "cobblemon:citrine_ball", "cobblemon:dive_ball", "cobblemon:dream_ball", "cobblemon:dusk_ball", "cobblemon:fast_ball", "cobblemon:friend_ball", "cobblemon:great_ball", "cobblemon:heal_ball", "cobblemon:heavy_ball", "cobblemon:level_ball", "cobblemon:love_ball", "cobblemon:lure_ball", "cobblemon:luxury_ball", "cobblemon:master_ball", "cobblemon:moon_ball", "cobblemon:nest_ball", "cobblemon:net_ball", "cobblemon:park_ball", "cobblemon:poke_ball", "cobblemon:premier_ball", "cobblemon:quick_ball", "cobblemon:repeat_ball", "cobblemon:roseate_ball", "cobblemon:safari_ball", "cobblemon:slate_ball", "cobblemon:sport_ball", "cobblemon:timer_ball", "cobblemon:ultra_ball", "cobblemon:verdant_ball", "cobblemon:vivichoke_seeds",
+                    "cobblemon:bug_gem", "cobblemon:dark_gem", "cobblemon:dragon_gem", "cobblemon:electric_gem", "cobblemon:fairy_gem", "cobblemon:fighting_gem", "cobblemon:fire_gem", "cobblemon:flying_gem", "cobblemon:ghost_gem", "cobblemon:grass_gem", "cobblemon:ground_gem", "cobblemon:ice_gem", "cobblemon:normal_gem", "cobblemon:poison_gem", "cobblemon:psychic_gem", "cobblemon:rock_gem", "cobblemon:steel_gem", "cobblemon:water_gem",
+                    "cobblemon:antidote", "cobblemon:awakening", "cobblemon:burn_heal", "cobblemon:calcium", "cobblemon:carbos", "cobblemon:elixir", "cobblemon:energy_root", "cobblemon:ether", "cobblemon:fine_remedy", "cobblemon:full_heal", "cobblemon:full_restore", "cobblemon:heal_powder", "cobblemon:hp_up", "cobblemon:hyper_potion", "cobblemon:ice_heal", "cobblemon:iron", "cobblemon:max_elixir", "cobblemon:max_ether", "cobblemon:max_potion", "cobblemon:max_revive", "cobblemon:medicinal_brew", "cobblemon:medicinal_leek", "cobblemon:paralyze_heal", "cobblemon:potion", "cobblemon:pp_max", "cobblemon:pp_up", "cobblemon:protein", "cobblemon:remedy", "cobblemon:revive", "cobblemon:super_potion", "cobblemon:superb_remedy", "cobblemon:zinc"
+
             };
 
             for (String item : cobblemonItemList) allItems.add(item);

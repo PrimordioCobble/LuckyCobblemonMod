@@ -1,0 +1,6 @@
+{
+  "processor_type": "minecraft:processor_list",
+  "processors": [
+    { "processor": "luckblockcobblemon:adaptive_block_processor" }
+  ]
+}

@@ -6,10 +6,10 @@
             "item": "minecraft:gold_block"
         },
         "L": {
-            "item": "minecraft:gold_ingot"
+            "item": "cobblemon:master_ball"
         },
         "B": {
-            "item": "minecraft:chest"
+            "item": "luckblockcobblemon:luck_block_pocket"
         }
     },
     "pattern": [
@@ -18,7 +18,7 @@
         "GLG"
     ],
     "result": {
-        "id": "minecraft:gold_block",
+        "id": "luckblockcobblemon:luck_block_vanilla",
         "count": 1
     }
 }

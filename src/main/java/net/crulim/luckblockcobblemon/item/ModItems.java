@@ -9,7 +9,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
-import static net.crulim.luckblockcobblemon.block.ModBlocks.OBSIDIAN_LEAF;
 
 public class ModItems {
 

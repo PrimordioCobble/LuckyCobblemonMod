@@ -23,25 +23,6 @@ public class ModBlocks {
 
     //public static final Block LUCK_BASE = registerBlock("luck_base",new LuckClass(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
 
-    public static final Block LUCK_OBSIDIAN_TRAPDOOR = registerBlock("luck_obsidian",
-            new CustomTrapdoorBlock(
-                    BlockSetType.OAK,
-                    AbstractBlock.Settings.create().strength(50.0f, 1200.0f).sounds(BlockSoundGroup.STONE).requiresTool().nonOpaque()
-            )
-    );
-
-    public static final Block OBSIDIAN_LEAF = registerBlock(
-            "obsidian_leaf",
-            new ObsidianLeafBlock(
-                    FabricBlockSettings.create()
-                            .mapColor(MapColor.DARK_GREEN)
-                            .strength(2.5f, 1200.0f)
-                            .requiresTool()
-                            .nonOpaque()
-                            .sounds(BlockSoundGroup.CHERRY_LEAVES)
-            )
-    );
-
 
 
 
@@ -50,7 +31,7 @@ public class ModBlocks {
     public static final Block LUCK_BLOCK_POCKET = registerBlock("luck_block_pocket",
             new LuckBlockPocket(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
 
-    // public static final Block LUCK_BLOCK_VANILLA = registerBlock("luck_block_vanilla", new LuckBlockVanilla(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
+    public static final Block LUCK_BLOCK_VANILLA = registerBlock("luck_block_vanilla", new LuckBlockVanilla(AbstractBlock.Settings.create().strength(0.5f).sounds(BlockSoundGroup.AMETHYST_BLOCK)));
 
 
     public static final Block LUCK_BLOCK_POCKET_FIRE = registerBlock("luck_block_pocket_fire",

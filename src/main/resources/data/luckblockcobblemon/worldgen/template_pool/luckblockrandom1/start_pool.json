@@ -6,7 +6,9 @@
       "weight": 1,
       "element": {
         "location": "luckblockcobblemon:luckblockrandom1",
-        "processors": "minecraft:empty",
+        "processors": [
+          { "processor": "luckblockcobblemon:adaptive" }
+        ],
         "projection": "rigid",
         "element_type": "minecraft:single_pool_element"
       }

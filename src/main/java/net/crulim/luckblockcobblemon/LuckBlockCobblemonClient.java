@@ -11,6 +11,6 @@ import net.crulim.luckblockcobblemon.block.ModBlocks;
 public class LuckBlockCobblemonClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.OBSIDIAN_LEAF, RenderLayer.getCutout());
+
     }
 }

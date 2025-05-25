@@ -19,11 +19,14 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class PocketLuckHandler {
 
+public class PocketLuckHandler {
+    private static boolean breakCreative = false;
     public static void reloadConfig() {
         POOLS.clear();
-        System.out.println("[PocketLuckHandler] Pools recarregadas com sucesso.");
+        weightedLevels.clear();
+        loadConfig();
+        System.out.println("[PocketLuckHandler] Configuração recarregada com sucesso.");
     }
 
     private static final Gson GSON = new GsonBuilder()
@@ -56,6 +59,27 @@ public class PocketLuckHandler {
         for (String file : expectedFiles) {
             POOLS.computeIfAbsent(file, PocketLuckHandler::loadOrCreate);
         }
+
+        // LEIA O ARQUIVO lvlconfig_types.json AQUI:
+        File levelConfigFile = new File(configDir, "lvlconfig_types.json");
+        if (levelConfigFile.exists()) {
+            try (Reader reader = new InputStreamReader(new FileInputStream(levelConfigFile), StandardCharsets.UTF_8)) {
+                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+
+                // breakCreative: se existir, carrega do lvlconfig_types.json (GLOBAL)
+                if (json.has("breakCreative")) {
+                    breakCreative = json.get("breakCreative").getAsBoolean();
+                    System.out.println("[PocketLuckHandler] breakCreative carregado do lvlconfig_types.json: " + breakCreative);
+                }
+
+                // (opcional) Se quiser, pode carregar outras configs globais daqui também!
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Se você ainda quiser manter a leitura do levelWeighting do level_config.json, deixe o trecho abaixo
         File configFile = new File(configDir, "level_config.json");
         if (configFile.exists()) {
             try (Reader reader = new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8)) {
@@ -63,7 +87,6 @@ public class PocketLuckHandler {
                 if (json.has("levelWeighting")) {
                     JsonArray levelArray = json.getAsJsonArray("levelWeighting");
                     weightedLevels.clear();
-
                     for (JsonElement el : levelArray) {
                         JsonObject obj = el.getAsJsonObject();
                         int min = obj.get("min").getAsInt();
@@ -71,7 +94,6 @@ public class PocketLuckHandler {
                         float chance = obj.get("chance").getAsFloat();
                         weightedLevels.add(new LevelRangeWeight(min, max, chance));
                     }
-
                     defaultMinLevel = -1;
                     defaultMaxLevel = -1;
                     System.out.println("[PocketLuckHandler] LevelWeighting carregado com sucesso.");
@@ -80,10 +102,13 @@ public class PocketLuckHandler {
                 e.printStackTrace();
             }
         }
-
         System.out.println("[PocketLuckHandler] Configuração inicial carregada.");
     }
 
+
+    public static boolean isBreakCreativeAllowed() {
+        return breakCreative;
+    }
 
 
     public static void trigger(ServerWorld world, BlockPos pos, Identifier blockId) {
@@ -273,6 +298,7 @@ public class PocketLuckHandler {
             file.getParentFile().mkdirs();
 
             JsonArray array = new JsonArray();
+
 
             Map<String, List<String>> pokemonMap = Map.of(
                     "water_ice", List.of("squirtle", "wartortle", "blastoise",
@@ -572,8 +598,15 @@ public class PocketLuckHandler {
                     finalJson.add("minLevel", new JsonPrimitive(1));
                     finalJson.add("maxLevel", new JsonPrimitive(100));
 
-// Adiciona o array de linhas explicativas como "_note"
                     JsonArray note = new JsonArray();
+                    note.add("INFO: 'breakCreative' controls whether Lucky Blocks can be activated in Creative mode.");
+                    note.add("If set to true, breaking a Lucky Block in Creative mode will trigger its event (recommended for testing only).");
+                    note.add("If set to false, Lucky Blocks can only be triggered in Survival/Adventure modes.");
+
+
+
+// Adiciona o array de linhas explicativas como "_note"
+                    note.add("---------");
                     note.add("There are 3 ways to define Pokémon levels for Lucky Blocks:");
                     note.add("1 - minLevel / maxLevel → If present in the event, defines the exact level range.");
                     note.add("   Example: minLevel: 10, maxLevel: 30");
@@ -583,6 +616,7 @@ public class PocketLuckHandler {
                     note.add("Priority order: minLevel/maxLevel > timeLeveling > levelWeighting.");
                     note.add("This file (lvlconfig_types.json) controls all those settings.");
                     finalJson.add("_note", note);
+                    finalJson.addProperty("breakCreative", false);
 
                     // timeLeveling base
                     JsonArray timeLeveling = new JsonArray();

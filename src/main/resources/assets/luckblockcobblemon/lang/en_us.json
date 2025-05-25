@@ -1,9 +1,6 @@
 {
-  "block.luckblockcobblemon.luck_base": "Luck Block",
-  "block.luckblockcobblemon.lucky_block_cobble": "Cobble Lucky Block",
-  "block.luckblockcobblemon.luck_block_vanilla": "Luck Block Vanilla",
-  "block.luckblockcobblemon.luck_block_pocket": "Luck Block Pocket",
-  "block.luckblockcobblemon.luck_obsidian": "Luck Obsidian Trap Door",
+  "block.luckblockcobblemon.luck_block_vanilla": "Lucky Block Legendary Cobblemon",
+  "block.luckblockcobblemon.luck_block_pocket": "Lucky Block Cobblemon",
   "block.luckblockcobblemon.luck_block_pocket_fire": "Pocket Lucky Block (Fire)",
   "block.luckblockcobblemon.luck_block_pocket_water": "Pocket Lucky Block (Water + Ice)",
   "block.luckblockcobblemon.luck_block_pocket_grass": "Pocket Lucky Block (Grass + Bug)",
@@ -12,9 +9,8 @@
   "block.luckblockcobblemon.luck_block_pocket_fly": "Pocket Lucky Block (Flying + Dragon)",
   "block.luckblockcobblemon.luck_block_pocket_eletric": "Pocket Lucky Block (Electric + Dark)",
   "block.luckblockcobblemon.luck_block_pocket_fairy": "Pocket Lucky Block (Fairy + Ghost + Poison)",
-  "block.luckblockcobblemon.obsidian_leaf": "Obsidian Leaf",
 
 
-  "itemgroup.luckblockcobblemon.luckblocks" : "LUCK BLOCK COBBLEMON"
+  "itemgroup.luckblockcobblemon.luckblocks" : "LUCKY BLOCK COBBLEMON"
 
 }
