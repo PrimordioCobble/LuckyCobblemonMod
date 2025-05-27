@@ -12,6 +12,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.crulim.luckblockcobblemon.command.StructureCommand;
+import net.minecraft.structure.processor.StructureProcessorList;
 import net.minecraft.text.Text;
 import static net.minecraft.server.command.CommandManager.literal;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 					() -> AdaptiveBlockProcessor.CODEC
 			);
 
+
 	@Override
 	public void onInitialize() {
 		ModBlocks.registerModBlocks();
@@ -47,6 +49,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 
 		PocketLuckHandler.loadConfig();
 		ReadmeGenerator.generateReadmeIfMissing();
+
 
 
 

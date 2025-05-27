@@ -30,33 +30,25 @@ public class AdaptiveBlockProcessor extends StructureProcessor {
             StructureTemplate.StructureBlockInfo current
     ) {
         Block block = original.state().getBlock();
-        if (block == Blocks.DIRT || block == Blocks.GRASS_BLOCK || block == Blocks.SAND || block == Blocks.STONE) {
-            Map<Block, Integer> blockCount = new HashMap<>();
-            for (BlockPos offset : BlockPos.iterate(
-                    pos.add(-1, -1, -1), pos.add(1, 1, 1))) {
-                if (!offset.equals(pos)) {
-                    BlockState state = world.getBlockState(offset);
-                    Block neighbor = state.getBlock();
-                    if (state.isAir() || !state.getFluidState().isEmpty()) continue;
-                    blockCount.put(neighbor, blockCount.getOrDefault(neighbor, 0) + 1);
+        if (block == Blocks.DIRT || block == Blocks.GRASS_BLOCK) {
+            // Desce até 20 blocos para tentar achar o solo real
+            BlockPos scanPos = pos.down();
+            int maxDepth = 20;
+            BlockState foundState = null;
+            for (int i = 0; i < maxDepth; i++) {
+                BlockState state = world.getBlockState(scanPos);
+                if (!state.isAir() && state.getFluidState().isEmpty()
+                        && state.getBlock() != Blocks.DIRT
+                        && state.getBlock() != Blocks.GRASS_BLOCK) {
+                    foundState = state;
+                    break;
                 }
+                scanPos = scanPos.down();
             }
-
-            Block dominant = null;
-            int max = 0;
-            for (Map.Entry<Block, Integer> entry : blockCount.entrySet()) {
-                if (entry.getValue() > max) {
-                    dominant = entry.getKey();
-                    max = entry.getValue();
-                }
-            }
-
-            if (dominant != null) {
-                BlockState newState = dominant.getDefaultState();
-                return new StructureTemplate.StructureBlockInfo(current.pos(), newState, current.nbt());
+            if (foundState != null) {
+                return new StructureTemplate.StructureBlockInfo(current.pos(), foundState.getBlock().getDefaultState(), current.nbt());
             }
         }
-
         return current;
     }
 

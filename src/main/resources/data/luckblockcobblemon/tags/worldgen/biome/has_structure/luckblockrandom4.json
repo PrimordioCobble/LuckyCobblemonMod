@@ -2,6 +2,6 @@
   "replace": false,
   "_comment": "This biome tag can specify the biome directly.",
   "values": [
-    "minecraft:plains"
+    "minecraft:sunflower_plains"
   ]
 }
