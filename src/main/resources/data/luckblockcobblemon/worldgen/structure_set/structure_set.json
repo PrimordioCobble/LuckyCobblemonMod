@@ -3,7 +3,13 @@
     { "structure": "luckblockcobblemon:luckblockrandom1", "weight": 3 },
     { "structure": "luckblockcobblemon:luckblockrandom2", "weight": 2 },
     { "structure": "luckblockcobblemon:luckblockrandom3", "weight": 3 },
-    { "structure": "luckblockcobblemon:luckblockrandom4", "weight": 2 }
+    { "structure": "luckblockcobblemon:luckblockrandom4", "weight": 2 },
+    { "structure": "luckblockcobblemon:acaciahouse", "weight": 2 },
+    { "structure": "luckblockcobblemon:darkhouse", "weight": 2 },
+    { "structure": "luckblockcobblemon:deserthouse", "weight": 2 },
+    { "structure": "luckblockcobblemon:junglehouse", "weight": 2 },
+    { "structure": "luckblockcobblemon:oakhouse", "weight": 2 },
+    { "structure": "luckblockcobblemon:sprucehouse", "weight": 2 }
   ],
   "placement": {
     "salt": 1234567890,

@@ -60,26 +60,26 @@ public class PocketLuckHandler {
             POOLS.computeIfAbsent(file, PocketLuckHandler::loadOrCreate);
         }
 
-        // LEIA O ARQUIVO lvlconfig_types.json AQUI:
+
         File levelConfigFile = new File(configDir, "lvlconfig_types.json");
         if (levelConfigFile.exists()) {
             try (Reader reader = new InputStreamReader(new FileInputStream(levelConfigFile), StandardCharsets.UTF_8)) {
                 JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
 
-                // breakCreative: se existir, carrega do lvlconfig_types.json (GLOBAL)
+
                 if (json.has("breakCreative")) {
                     breakCreative = json.get("breakCreative").getAsBoolean();
                     System.out.println("[PocketLuckHandler] breakCreative carregado do lvlconfig_types.json: " + breakCreative);
                 }
 
-                // (opcional) Se quiser, pode carregar outras configs globais daqui também!
+
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        // Se você ainda quiser manter a leitura do levelWeighting do level_config.json, deixe o trecho abaixo
+
         File configFile = new File(configDir, "level_config.json");
         if (configFile.exists()) {
             try (Reader reader = new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8)) {
@@ -215,16 +215,16 @@ public class PocketLuckHandler {
     }
 
     private static int getEffectiveLevel(ServerWorld world, JsonObject data, String type) {
-        // 1. minLevel/maxLevel direto no evento
+
         if (data.has("minLevel") && data.has("maxLevel")) {
             return random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt() + 1);
         }
 
-        // 2. timeLeveling_<tipo> com +20 dias de offset
+
         int timeLevel = getTimeBasedLevel(world, type);
         if (timeLevel != -1) return timeLevel;
 
-        // 3. levelWeighting_<tipo>
+
         List<LevelRangeWeight> typeWeights = getLevelWeightingByType(type);
         if (!typeWeights.isEmpty()) {
             return getWeightedRandomLevel(typeWeights);
@@ -586,7 +586,7 @@ public class PocketLuckHandler {
 
             System.out.println("[PocketLuckHandler] Arquivo default criado: " + key);
 
-            // GERAÇÃO UNIFICADA DE lvlconfig_types.json
+
             if (resolvedType != null) {
                 File levelFile = new File("config/luckblockpocket/lvlconfig_types.json");
                 JsonObject finalJson;
@@ -605,7 +605,7 @@ public class PocketLuckHandler {
 
 
 
-// Adiciona o array de linhas explicativas como "_note"
+
                     note.add("---------");
                     note.add("There are 3 ways to define Pokémon levels for Lucky Blocks:");
                     note.add("1 - minLevel / maxLevel → If present in the event, defines the exact level range.");
@@ -618,26 +618,26 @@ public class PocketLuckHandler {
                     finalJson.add("_note", note);
                     finalJson.addProperty("breakCreative", false);
 
-                    // timeLeveling base
+
                     JsonArray timeLeveling = new JsonArray();
 
                     JsonObject days0to20 = new JsonObject();
                     days0to20.addProperty("minDays", 0);
-                    days0to20.addProperty("maxDays", 20);
+                    days0to20.addProperty("maxDays", 25);
                     JsonArray levels0to20 = new JsonArray();
-                    levels0to20.add(createLevelRange(1, 40, 90.0f));
-                    levels0to20.add(createLevelRange(41, 60, 9.0f));
-                    levels0to20.add(createLevelRange(61, 100, 1.0f));
+                    levels0to20.add(createLevelRange(1, 12, 90.0f));
+                    levels0to20.add(createLevelRange(13, 16, 9.0f));
+                    levels0to20.add(createLevelRange(17, 20, 1.0f));
                     days0to20.add("levels", levels0to20);
                     timeLeveling.add(days0to20);
 
                     JsonObject days21to50 = new JsonObject();
-                    days21to50.addProperty("minDays", 21);
+                    days21to50.addProperty("minDays", 26);
                     days21to50.addProperty("maxDays", 50);
                     JsonArray levels21to50 = new JsonArray();
-                    levels21to50.add(createLevelRange(1, 40, 60.0f));
-                    levels21to50.add(createLevelRange(41, 60, 30.0f));
-                    levels21to50.add(createLevelRange(61, 100, 10.0f));
+                    levels21to50.add(createLevelRange(1, 35, 60.0f));
+                    levels21to50.add(createLevelRange(36, 45, 30.0f));
+                    levels21to50.add(createLevelRange(46, 55, 10.0f));
                     days21to50.add("levels", levels21to50);
                     timeLeveling.add(days21to50);
 
@@ -646,8 +646,8 @@ public class PocketLuckHandler {
                     days51to100.addProperty("maxDays", 100);
                     JsonArray levels51to100 = new JsonArray();
                     levels51to100.add(createLevelRange(30, 60, 50.0f));
-                    levels51to100.add(createLevelRange(61, 85, 35.0f));
-                    levels51to100.add(createLevelRange(86, 100, 15.0f));
+                    levels51to100.add(createLevelRange(61, 65, 35.0f));
+                    levels51to100.add(createLevelRange(66, 70, 15.0f));
                     days51to100.add("levels", levels51to100);
                     timeLeveling.add(days51to100);
 
@@ -655,16 +655,16 @@ public class PocketLuckHandler {
                     days101plus.addProperty("minDays", 101);
                     days101plus.addProperty("maxDays", 99999);
                     JsonArray levels101plus = new JsonArray();
-                    levels101plus.add(createLevelRange(60, 85, 60.0f));
-                    levels101plus.add(createLevelRange(86, 95, 30.0f));
-                    levels101plus.add(createLevelRange(96, 100, 10.0f));
+                    levels101plus.add(createLevelRange(40, 80, 60.0f));
+                    levels101plus.add(createLevelRange(81, 85, 30.0f));
+                    levels101plus.add(createLevelRange(86, 90, 10.0f));
                     days101plus.add("levels", levels101plus);
                     timeLeveling.add(days101plus);
 
                     finalJson.add("timeLeveling", timeLeveling);
                 }
 
-                // Só adiciona levelWeighting_<tipo> se não existir
+
                 String lwKey = "levelWeighting_" + resolvedType;
                 if (!finalJson.has(lwKey)) {
                     JsonArray weighting = new JsonArray();

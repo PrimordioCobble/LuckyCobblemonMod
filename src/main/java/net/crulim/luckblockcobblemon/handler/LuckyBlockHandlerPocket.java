@@ -784,21 +784,21 @@ public class LuckyBlockHandlerPocket {
 
             JsonObject days0to20 = new JsonObject();
             days0to20.addProperty("minDays", 0);
-            days0to20.addProperty("maxDays", 20);
+            days0to20.addProperty("maxDays", 25);
             JsonArray levels0to20 = new JsonArray();
-            levels0to20.add(createLevelRange(1, 40, 90.0f));
-            levels0to20.add(createLevelRange(41, 60, 9.0f));
-            levels0to20.add(createLevelRange(61, 100, 1.0f));
+            levels0to20.add(createLevelRange(1, 12, 90.0f));
+            levels0to20.add(createLevelRange(13, 16, 9.0f));
+            levels0to20.add(createLevelRange(17, 20, 1.0f));
             days0to20.add("levels", levels0to20);
             timeLeveling.add(days0to20);
 
             JsonObject days21to50 = new JsonObject();
-            days21to50.addProperty("minDays", 21);
+            days21to50.addProperty("minDays", 26);
             days21to50.addProperty("maxDays", 50);
             JsonArray levels21to50 = new JsonArray();
-            levels21to50.add(createLevelRange(1, 40, 60.0f));
-            levels21to50.add(createLevelRange(41, 60, 30.0f));
-            levels21to50.add(createLevelRange(61, 100, 10.0f));
+            levels21to50.add(createLevelRange(1, 35, 60.0f));
+            levels21to50.add(createLevelRange(36, 45, 30.0f));
+            levels21to50.add(createLevelRange(46, 55, 10.0f));
             days21to50.add("levels", levels21to50);
             timeLeveling.add(days21to50);
 
@@ -807,8 +807,8 @@ public class LuckyBlockHandlerPocket {
             days51to100.addProperty("maxDays", 100);
             JsonArray levels51to100 = new JsonArray();
             levels51to100.add(createLevelRange(30, 60, 50.0f));
-            levels51to100.add(createLevelRange(61, 85, 35.0f));
-            levels51to100.add(createLevelRange(86, 100, 15.0f));
+            levels51to100.add(createLevelRange(61, 65, 35.0f));
+            levels51to100.add(createLevelRange(66, 70, 15.0f));
             days51to100.add("levels", levels51to100);
             timeLeveling.add(days51to100);
 
@@ -816,9 +816,9 @@ public class LuckyBlockHandlerPocket {
             days101plus.addProperty("minDays", 101);
             days101plus.addProperty("maxDays", 99999);
             JsonArray levels101plus = new JsonArray();
-            levels101plus.add(createLevelRange(60, 85, 60.0f));
-            levels101plus.add(createLevelRange(86, 95, 30.0f));
-            levels101plus.add(createLevelRange(96, 100, 10.0f));
+            levels101plus.add(createLevelRange(40, 80, 60.0f));
+            levels101plus.add(createLevelRange(81, 85, 30.0f));
+            levels101plus.add(createLevelRange(86, 90, 10.0f));
             days101plus.add("levels", levels101plus);
             timeLeveling.add(days101plus);
 
