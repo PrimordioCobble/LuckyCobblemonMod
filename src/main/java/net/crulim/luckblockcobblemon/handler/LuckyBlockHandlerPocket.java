@@ -180,7 +180,7 @@ public class LuckyBlockHandlerPocket {
 
         for (TimeBasedLevelRange timeRange : timeBasedLeveling) {
             if (days >= timeRange.minDays && days <= timeRange.maxDays) {
-                System.out.println("[PocketLuckHandler] Tempo atual: " + days + " dias. Usando faixa de " + timeRange.minDays + " a " + timeRange.maxDays);
+                //System.out.println("[PocketLuckHandler] Tempo atual: " + days + " dias. Usando faixa de " + timeRange.minDays + " a " + timeRange.maxDays);
                 float total = 0F;
                 for (LevelRangeWeight range : timeRange.levels) {
                     total += range.chance;
@@ -204,7 +204,7 @@ public class LuckyBlockHandlerPocket {
 
     public static void reloadConfig() {
         loadConfig();
-        System.out.println("[LuckyBlockPocket] Config reloaded!");
+        //System.out.println("[LuckyBlockPocket] Config reloaded!");
     }
 
     public static void triggerLuckEvent(ServerWorld world, BlockPos pos) {
@@ -280,7 +280,7 @@ public class LuckyBlockHandlerPocket {
 
         // Se todas as chances forem 0, usar a lista original como fallback
         if (totalChance <= 0F || validPool.isEmpty()) {
-            System.out.println("[LuckyBlockPocket] Todas as chances são 0. Escolhendo evento aleatório da lista.");
+            //System.out.println("[LuckyBlockPocket] Todas as chances são 0. Escolhendo evento aleatório da lista.");
             return pool.get(random.nextInt(pool.size()));
         }
 
@@ -302,7 +302,7 @@ public class LuckyBlockHandlerPocket {
 
 
     private static void executeLuck(ServerWorld world, BlockPos pos, JsonObject data) {
-        System.out.println("[LuckyBlockPocket] Evento sorteado: " + data.toString());
+        //System.out.println("[LuckyBlockPocket] Evento sorteado: " + data.toString());
         String type = data.get("type").getAsString();
 
 
@@ -359,7 +359,7 @@ public class LuckyBlockHandlerPocket {
     }
 
     private static void spawnCobblemon(ServerWorld world, BlockPos pos, JsonObject data, boolean forceShiny) {
-        System.out.println("[LuckyBlockPocket] Iniciando spawnCobblemon com dados: " + data.toString());
+        //System.out.println("[LuckyBlockPocket] Iniciando spawnCobblemon com dados: " + data.toString());
 
         String speciesName;
         if (data.has("species")) {
@@ -367,12 +367,12 @@ public class LuckyBlockHandlerPocket {
         } else if (data.has("cobblemons")) {
             JsonArray list = data.getAsJsonArray("cobblemons");
             if (list.isEmpty()) {
-                System.out.println("[LuckyBlockPocket] Lista de cobblemons vazia.");
+                //System.out.println("[LuckyBlockPocket] Lista de cobblemons vazia.");
                 return;
             }
             speciesName = list.get(random.nextInt(list.size())).getAsString();
         } else {
-            System.out.println("[LuckyBlockPocket] Nenhuma espécie ou lista de cobblemons definida.");
+            //System.out.println("[LuckyBlockPocket] Nenhuma espécie ou lista de cobblemons definida.");
             return;
         }
 
@@ -380,7 +380,7 @@ public class LuckyBlockHandlerPocket {
 
         Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
         if (species == null) {
-            System.out.println("[LuckyBlockPocket] ESPÉCIE NÃO ENCONTRADA: " + speciesName);
+            //System.out.println("[LuckyBlockPocket] ESPÉCIE NÃO ENCONTRADA: " + speciesName);
             return;
         }
 
@@ -401,7 +401,7 @@ public class LuckyBlockHandlerPocket {
         pokemon.setLevel(level);
         pokemon.setShiny(isShiny);
 
-        // ✅ Garante ataques funcionais com PP
+        // Garante ataques funcionais
         pokemon.getMoveSet().clear();
         Iterable<MoveTemplate> relearnableMoves = pokemon.getRelearnableMoves();
         int index = 0;
@@ -415,16 +415,14 @@ public class LuckyBlockHandlerPocket {
             }
         }
 
-        System.out.println("[LuckyBlockPocket] Level definido: " + level);
-        System.out.println("[LuckyBlockPocket] Shiny: " + isShiny);
 
         Vec3d spawnPos = Vec3d.ofCenter(pos).add(0, 1, 0);
         PokemonEntity entity = pokemon.sendOut(world, spawnPos, null, e -> null);
 
         if (entity == null) {
-            System.out.println("[LuckyBlockPocket] Falha ao spawnar Pokémon: " + speciesName);
+            System.out.println("[LuckyBlockPocket] Failed to spawn Cobblemon: " + speciesName);
         } else {
-            System.out.println("[LuckyBlockPocket] Pokémon spawnado com sucesso: " + speciesName);
+            System.out.println("[LuckyBlockPocket] Cobblemon spawned successfully: " + speciesName);
         }
     }
 
@@ -477,7 +475,13 @@ public class LuckyBlockHandlerPocket {
 
         for (int i = 0; i < count; i++) {
             Species species = allSpecies.get(random.nextInt(allSpecies.size()));
-            String speciesName = species.getName().toLowerCase(Locale.ROOT).replace(" ", "_");
+            String speciesName = species.getName()
+                    .toLowerCase(Locale.ROOT)
+                    .replace(" ", "")
+                    .replace("-", "")
+                    .replace("_", "")
+                    .replace("-o", "o")
+                    .replace("'", "");
 
             int level;
             if (data.has("minLevel") && data.has("maxLevel")) {
@@ -516,10 +520,10 @@ public class LuckyBlockHandlerPocket {
 
         return input
                 .toLowerCase(Locale.ROOT)
-                .replace(" ", "-")
-                .replace("_", "-")
-                .replace("♀", "-f")
-                .replace("♂", "-m")
+                .replace(" ", "")
+                .replace("_", "")
+                .replace("♀", "f")
+                .replace("♂", "m")
                 .replaceAll("[^a-z0-9\\-]", ""); // remove qualquer caractere especial
     }
 
@@ -555,7 +559,7 @@ public class LuckyBlockHandlerPocket {
         } else if (data.has("structure")) {
             structureId = data.get("structure").getAsString();
         } else {
-            System.out.println("[LuckyBlockPocket] Nenhum ID de estrutura encontrado no config.");
+            System.out.println("[LuckyBlockPocket] No structure ID found in the config.");
             return;
         }
 
@@ -564,7 +568,7 @@ public class LuckyBlockHandlerPocket {
         var optional = templateManager.getTemplate(id);
 
         if (optional.isEmpty()) {
-            System.out.println("[LuckyBlockPocket] Estrutura não encontrada: " + id);
+            System.out.println("[LuckyBlockPocket] Structure not found:" + id);
             return;
         }
 
@@ -691,7 +695,7 @@ public class LuckyBlockHandlerPocket {
             };
             for (String name : cobblemonList) cobblemons.add(name);
             cobblemonSpawn.add("cobblemons", cobblemons);
-            cobblemonSpawn.addProperty("chance", 10F);
+            cobblemonSpawn.addProperty("chance", 10.98F);
             pool.add(cobblemonSpawn);
 
 
@@ -699,7 +703,7 @@ public class LuckyBlockHandlerPocket {
             JsonObject shinySpawn = new JsonObject();
             shinySpawn.addProperty("type", "shiny_cobblemonp");
             shinySpawn.add("cobblemons", cobblemons.deepCopy());
-            shinySpawn.addProperty("chance", 1F);
+            shinySpawn.addProperty("chance", 0.02F);
             pool.add(shinySpawn);
 
             // Random Cobblemon
@@ -727,7 +731,6 @@ public class LuckyBlockHandlerPocket {
             // Todos itens
             JsonObject allItemsDrop = new JsonObject();
             allItemsDrop.addProperty("type", "cobblemon_allitems");
-            allItemsDrop.addProperty("__note", "Drops a random item from the full list of Cobblemon items.");
 
             JsonArray allItems = new JsonArray();
             String[] cobblemonItemList = {
