@@ -13,9 +13,9 @@
         }
     },
     "pattern": [
-        "GLG",
-        "LBL",
-        "GLG"
+        "GBG",
+        "BLB",
+        "GBG"
     ],
     "result": {
         "id": "luckblockcobblemon:luck_block_vanilla",
