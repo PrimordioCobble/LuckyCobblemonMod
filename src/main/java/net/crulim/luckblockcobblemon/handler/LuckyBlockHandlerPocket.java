@@ -385,15 +385,29 @@ public class LuckyBlockHandlerPocket {
         }
 
         int level;
-        if (data.has("level")) {
-            level = data.get("level").getAsInt();
+
+// 1. minLevel/maxLevel customizados (apenas se ambos > 0)
+        if (data.has("minLevel") && data.has("maxLevel")) {
+            int minLevelLocal = data.get("minLevel").getAsInt();
+            int maxLevelLocal = data.get("maxLevel").getAsInt();
+            if (minLevelLocal > 0 && maxLevelLocal > 0) {
+                level = random.nextBetween(minLevelLocal, maxLevelLocal + 1);
+            } else if (!timeBasedLeveling.isEmpty()) {
+                // 2. timeLeveling
+                int timeBased = getTimeBasedLevel(world);
+                level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+            } else {
+                // 3. weighted/default
+                level = getWeightedRandomLevel();
+            }
         } else if (!timeBasedLeveling.isEmpty()) {
+            // 2. timeLeveling
             int timeBased = getTimeBasedLevel(world);
             level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
         } else {
+            // 3. weighted/default
             level = getWeightedRandomLevel();
         }
-
         boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChancePercent);
 
         Pokemon pokemon = new Pokemon();
@@ -440,11 +454,7 @@ public class LuckyBlockHandlerPocket {
         if (data.has("minLevel") && data.has("maxLevel")) {
             int min = data.get("minLevel").getAsInt();
             int max = data.get("maxLevel").getAsInt();
-            level = random.nextBetween(min, max + 1);
-        } else {
-            if (data.has("minLevel") && data.has("maxLevel")) {
-                int min = data.get("minLevel").getAsInt();
-                int max = data.get("maxLevel").getAsInt();
+            if (min > 0 && max > 0) {
                 level = random.nextBetween(min, max + 1);
             } else if (!timeBasedLeveling.isEmpty()) {
                 int timeBased = getTimeBasedLevel(world);
@@ -452,6 +462,11 @@ public class LuckyBlockHandlerPocket {
             } else {
                 level = getWeightedRandomLevel();
             }
+        } else if (!timeBasedLeveling.isEmpty()) {
+            int timeBased = getTimeBasedLevel(world);
+            level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+        } else {
+            level = getWeightedRandomLevel();
         }
 
         float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
@@ -487,18 +502,19 @@ public class LuckyBlockHandlerPocket {
             if (data.has("minLevel") && data.has("maxLevel")) {
                 int minLevelLocal = data.get("minLevel").getAsInt();
                 int maxLevelLocal = data.get("maxLevel").getAsInt();
-                level = random.nextBetween(minLevelLocal, maxLevelLocal + 1);
-            } else {
-                if (data.has("minLevel") && data.has("maxLevel")) {
-                    min = data.get("minLevel").getAsInt();
-                    max = data.get("maxLevel").getAsInt();
-                    level = random.nextBetween(min, max + 1);
+                if (minLevelLocal > 0 && maxLevelLocal > 0) {
+                    level = random.nextBetween(minLevelLocal, maxLevelLocal + 1);
                 } else if (!timeBasedLeveling.isEmpty()) {
                     int timeBased = getTimeBasedLevel(world);
                     level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
                 } else {
                     level = getWeightedRandomLevel();
                 }
+            } else if (!timeBasedLeveling.isEmpty()) {
+                int timeBased = getTimeBasedLevel(world);
+                level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+            } else {
+                level = getWeightedRandomLevel();
             }
 
             JsonObject fakeData = new JsonObject();
@@ -695,6 +711,8 @@ public class LuckyBlockHandlerPocket {
             };
             for (String name : cobblemonList) cobblemons.add(name);
             cobblemonSpawn.add("cobblemons", cobblemons);
+            cobblemonSpawn.addProperty("minLevel", 0);
+            cobblemonSpawn.addProperty("maxLevel", 0);
             cobblemonSpawn.addProperty("chance", 10.98F);
             pool.add(cobblemonSpawn);
 
@@ -703,12 +721,16 @@ public class LuckyBlockHandlerPocket {
             JsonObject shinySpawn = new JsonObject();
             shinySpawn.addProperty("type", "shiny_cobblemonp");
             shinySpawn.add("cobblemons", cobblemons.deepCopy());
+            shinySpawn.addProperty("minLevel", 0);
+            shinySpawn.addProperty("maxLevel", 0);
             shinySpawn.addProperty("chance", 0.02F);
             pool.add(shinySpawn);
 
             // Random Cobblemon
             JsonObject randomCobblemonSpawn = new JsonObject();
             randomCobblemonSpawn.addProperty("type", "random_cobblemonp");
+            randomCobblemonSpawn.addProperty("minLevel", 0);
+            randomCobblemonSpawn.addProperty("maxLevel", 0);
             randomCobblemonSpawn.addProperty("chance", 75F);
             randomCobblemonSpawn.addProperty("shinyChance", 0.02F);
             pool.add(randomCobblemonSpawn);
@@ -719,6 +741,8 @@ public class LuckyBlockHandlerPocket {
             multiCobblemonSpawn.addProperty("min", 4);       // quantidade mínima
             multiCobblemonSpawn.addProperty("max", 8);       // quantidade máxima
             multiCobblemonSpawn.addProperty("chance", 3F);
+            multiCobblemonSpawn.addProperty("minLevel", 0);
+            multiCobblemonSpawn.addProperty("maxLevel", 0);
             multiCobblemonSpawn.addProperty("shinyChance", 0.02F);
             pool.add(multiCobblemonSpawn);
 

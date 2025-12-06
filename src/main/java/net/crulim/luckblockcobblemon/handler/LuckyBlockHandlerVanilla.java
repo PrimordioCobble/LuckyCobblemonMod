@@ -61,7 +61,8 @@ public class LuckyBlockHandlerVanilla {
             return;
         }
 
-        int level = getLevel(world);
+        // Passa o objeto do config para getLevel!
+        int level = getLevel(world, getLegendaryConfig());
         boolean isShiny = random.nextFloat() * 100F < shinyChance;
 
         Pokemon pokemon = new Pokemon();
@@ -88,17 +89,26 @@ public class LuckyBlockHandlerVanilla {
         }
     }
 
-    private static int getLevel(ServerWorld world) {
+    private static int getLevel(ServerWorld world, JsonObject event) {
+        // 1. Checa minLevel/maxLevel > 0 no evento
+        if (event != null && event.has("minLevel") && event.has("maxLevel")) {
+            int min = event.get("minLevel").getAsInt();
+            int max = event.get("maxLevel").getAsInt();
+            if (min > 0 && max > 0) {
+                return random.nextBetween(min, max + 1);
+            }
+        }
+        // 2. Se não, timeLeveling
         long days = world.getTimeOfDay() / 24000L;
-
         for (TimeLevelRange range : timeLeveling) {
             if (days >= range.minDays && days <= range.maxDays) {
                 return random.nextBetween(range.minLevel, range.maxLevel + 1);
             }
         }
-
+        // 3. Fallback global
         return random.nextBetween(minLevel, maxLevel + 1);
     }
+    private static JsonObject loadedConfig = null;
 
     public static void loadConfig() {
         try {
@@ -108,6 +118,7 @@ public class LuckyBlockHandlerVanilla {
             }
 
             JsonObject json = JsonParser.parseReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)).getAsJsonObject();
+            loadedConfig = json; // <-- AQUI!!!
 
             legendaryList.clear();
             for (JsonElement el : json.getAsJsonArray("legendaryPool")) {
@@ -139,6 +150,10 @@ public class LuckyBlockHandlerVanilla {
             System.out.println("[LuckyBlockLegendary] Erro ao carregar config: " + e.getMessage());
             e.printStackTrace();
         }
+
+    }
+    private static JsonObject getLegendaryConfig() {
+        return loadedConfig;
     }
 
     public static boolean isBreakCreativeAllowed() {
@@ -173,8 +188,8 @@ public class LuckyBlockHandlerVanilla {
             }
 
             root.add("legendaryPool", pool);
-            root.addProperty("minLevel", 60);
-            root.addProperty("maxLevel", 100);
+            root.addProperty("minLevel", 0);
+            root.addProperty("maxLevel", 0);
             root.addProperty("shinyChance", 0.02F);
 
             // Sistema de timeLeveling extenso

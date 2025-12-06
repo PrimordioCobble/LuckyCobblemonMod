@@ -214,25 +214,69 @@ public class PocketLuckHandler {
         return -1;
     }
 
-    private static int getEffectiveLevel(ServerWorld world, JsonObject data, String type) {
-
-        if (data.has("minLevel") && data.has("maxLevel")) {
-            return random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt() + 1);
+    private static int getEffectiveLevel(ServerWorld world, String type) {
+        // 1. minLevel/maxLevel global
+        File configFile = new File("config/luckblockpocket/lvlconfig_types.json");
+        if (configFile.exists()) {
+            try (Reader reader = new FileReader(configFile)) {
+                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+                if (json.has("minLevel") && json.has("maxLevel")) {
+                    int min = json.get("minLevel").getAsInt();
+                    int max = json.get("maxLevel").getAsInt();
+                    if (min > 0 && max > 0) {
+                        return random.nextBetween(min, max + 1);
+                    }
+                }
+                // 2. timeLeveling_type
+                String key = "timeLeveling_" + type;
+                if (json.has(key)) {
+                    JsonArray timeLeveling = json.getAsJsonArray(key);
+                    long days = (world.getTimeOfDay() / 24000L) + 20;
+                    for (JsonElement el : timeLeveling) {
+                        JsonObject obj = el.getAsJsonObject();
+                        long minDays = obj.get("minDays").getAsLong();
+                        long maxDays = obj.get("maxDays").getAsLong();
+                        if (days >= minDays && days <= maxDays) {
+                            JsonArray levels = obj.getAsJsonArray("levels");
+                            float total = 0;
+                            for (JsonElement lvl : levels)
+                                total += lvl.getAsJsonObject().get("chance").getAsFloat();
+                            float roll = random.nextFloat() * total, cumulative = 0;
+                            for (JsonElement lvl : levels) {
+                                JsonObject objLvl = lvl.getAsJsonObject();
+                                cumulative += objLvl.get("chance").getAsFloat();
+                                if (roll <= cumulative) {
+                                    int minL = objLvl.get("min").getAsInt();
+                                    int maxL = objLvl.get("max").getAsInt();
+                                    return random.nextBetween(minL, maxL + 1);
+                                }
+                            }
+                        }
+                    }
+                }
+                // 3. levelWeighting_type
+                String lwKey = "levelWeighting_" + type;
+                if (json.has(lwKey)) {
+                    JsonArray arr = json.getAsJsonArray(lwKey);
+                    float total = 0F;
+                    for (JsonElement el : arr) total += el.getAsJsonObject().get("chance").getAsFloat();
+                    float roll = random.nextFloat() * total, cumulative = 0F;
+                    for (JsonElement el : arr) {
+                        JsonObject obj = el.getAsJsonObject();
+                        cumulative += obj.get("chance").getAsFloat();
+                        if (roll < cumulative) {
+                            int minL = obj.get("min").getAsInt();
+                            int maxL = obj.get("max").getAsInt();
+                            return random.nextBetween(minL, maxL + 1);
+                        }
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
         }
-
-
-        int timeLevel = getTimeBasedLevel(world, type);
-        if (timeLevel != -1) return timeLevel;
-
-
-        List<LevelRangeWeight> typeWeights = getLevelWeightingByType(type);
-        if (!typeWeights.isEmpty()) {
-            return getWeightedRandomLevel(typeWeights);
-        }
-
-        // fallback padrão
-        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
+        // fallback
+        return random.nextBetween(5, 15 + 1);
     }
+
 
     private static JsonObject createLevelRange(int min, int max, float chance) {
         JsonObject obj = new JsonObject();
@@ -595,8 +639,8 @@ public class PocketLuckHandler {
                     finalJson = GSON.fromJson(new FileReader(levelFile), JsonObject.class);
                 } else {
                     finalJson = new JsonObject();
-                    finalJson.add("minLevel", new JsonPrimitive(1));
-                    finalJson.add("maxLevel", new JsonPrimitive(100));
+                    finalJson.addProperty("minLevel", 0);
+                    finalJson.addProperty("maxLevel", 0);
 
                     JsonArray note = new JsonArray();
                     note.add("INFO: 'breakCreative' controls whether Lucky Blocks can be activated in Creative mode.");
@@ -764,7 +808,7 @@ public class PocketLuckHandler {
         pokemon.setSpecies(species);
 
         String typeKey = getTypeFromBlockName(pos, world);
-        int level = getEffectiveLevel(world, data, typeKey);
+        int level = getEffectiveLevel(world, typeKey);
         pokemon.setLevel(level);
 
         float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
