@@ -1,0 +1,9 @@
+{
+  "feature": "luckblockcobblemon:pocket_lucky_block",
+  "placement": [
+    { "type": "minecraft:rarity_filter", "chance": 235 },
+    { "type": "minecraft:count", "count": 1 },
+    { "type": "minecraft:in_square" },
+    { "type": "minecraft:biome" }
+  ]
+}
