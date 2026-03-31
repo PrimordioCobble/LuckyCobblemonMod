@@ -73,23 +73,26 @@ public class LuckyBlockHandlerPocket {
 
             breakCreative = json.has("breakCreative") && json.get("breakCreative").getAsBoolean();
 
-            // Limpa os pools anteriores
             luckPool.clear();
+            weightedLevels.clear();
+            timeBasedLeveling.clear();
 
-            // Carrega os eventos da sorte
-            JsonArray poolArray = json.getAsJsonArray("luckPool");
-            for (JsonElement element : poolArray) {
-                luckPool.add(element.getAsJsonObject());
+            if (json.has("luckPool") && json.get("luckPool").isJsonArray()) {
+                JsonArray poolArray = json.getAsJsonArray("luckPool");
+                for (JsonElement element : poolArray) {
+                    if (element != null && element.isJsonObject()) {
+                        luckPool.add(element.getAsJsonObject());
+                    }
+                }
             }
 
-            // Shiny chance
+            appendConfiguredLegendarySpawn(json);
+
             shinyChancePercent = json.has("shinyChancePercent")
                     ? json.get("shinyChancePercent").getAsFloat()
                     : 5.0F;
 
-            // Carrega levelWeighting (prioritário)
             if (json.has("levelWeighting")) {
-                weightedLevels.clear();
                 JsonArray levelArray = json.getAsJsonArray("levelWeighting");
                 for (JsonElement el : levelArray) {
                     JsonObject obj = el.getAsJsonObject();
@@ -101,20 +104,16 @@ public class LuckyBlockHandlerPocket {
 
                 minLevel = -1;
                 maxLevel = -1;
-
             } else if (json.has("levelRange")) {
-                // Só usa levelRange se não houver weighting
                 JsonObject levelRange = json.getAsJsonObject("levelRange");
                 minLevel = levelRange.has("min") ? levelRange.get("min").getAsInt() : 5;
                 maxLevel = levelRange.has("max") ? levelRange.get("max").getAsInt() : 30;
-
             } else {
-                // fallback final se nenhum dos dois existir
                 minLevel = 5;
                 maxLevel = 30;
             }
+
             if (json.has("timeLeveling")) {
-                timeBasedLeveling.clear();
                 JsonArray timeArray = json.getAsJsonArray("timeLeveling");
                 for (JsonElement timeElement : timeArray) {
                     JsonObject timeObj = timeElement.getAsJsonObject();
@@ -136,11 +135,77 @@ public class LuckyBlockHandlerPocket {
             }
 
             System.out.println("[LuckyBlockPocket] Config loaded successfully.");
-
         } catch (Exception e) {
             System.out.println("[LuckyBlockPocket] Failed to load config: " + e.getMessage());
             LOGGER.log(Level.SEVERE, "Erro ao carregar configuração", e);
         }
+    }
+
+    private static void appendConfiguredLegendarySpawn(JsonObject json) {
+        if (json.has("legendarySpawn") && json.get("legendarySpawn").isJsonObject()) {
+            JsonObject legendarySpawn = json.getAsJsonObject("legendarySpawn");
+            if (!legendarySpawn.has("enabled") || !legendarySpawn.get("enabled").getAsBoolean()) {
+                return;
+            }
+
+            JsonObject event = createLegendaryEvent(
+                    legendarySpawn.has("species") && legendarySpawn.get("species").isJsonArray()
+                            ? legendarySpawn.getAsJsonArray("species")
+                            : null,
+                    legendarySpawn.has("chance") ? legendarySpawn.get("chance").getAsFloat() : 0.0F,
+                    legendarySpawn.has("minLevel") ? legendarySpawn.get("minLevel").getAsInt() : 50,
+                    legendarySpawn.has("maxLevel") ? legendarySpawn.get("maxLevel").getAsInt() : 70,
+                    legendarySpawn.has("shinyChance") ? legendarySpawn.get("shinyChance").getAsFloat() : 0.02F
+            );
+
+            if (event != null) {
+                luckPool.add(event);
+            }
+            return;
+        }
+
+        if (json.has("legendaryPool") && json.get("legendaryPool").isJsonArray()) {
+            JsonObject legacyEvent = createLegendaryEvent(
+                    json.getAsJsonArray("legendaryPool"),
+                    json.has("legendaryChance") ? json.get("legendaryChance").getAsFloat() : 0.0F,
+                    json.has("legendaryMinLevel") ? json.get("legendaryMinLevel").getAsInt() : 50,
+                    json.has("legendaryMaxLevel") ? json.get("legendaryMaxLevel").getAsInt() : 70,
+                    json.has("legendaryShinyChance") ? json.get("legendaryShinyChance").getAsFloat() : 0.02F
+            );
+
+            if (legacyEvent != null) {
+                luckPool.add(legacyEvent);
+            }
+        }
+    }
+
+    private static JsonObject createLegendaryEvent(JsonArray speciesArray, float chance, int minLegendaryLevel, int maxLegendaryLevel, float legendaryShinyChance) {
+        if (speciesArray == null || speciesArray.isEmpty() || chance <= 0.0F) {
+            return null;
+        }
+
+        JsonArray validSpecies = new JsonArray();
+        for (JsonElement element : speciesArray) {
+            if (element != null && element.isJsonPrimitive()) {
+                String name = element.getAsString();
+                if (!name.isBlank()) {
+                    validSpecies.add(name);
+                }
+            }
+        }
+
+        if (validSpecies.isEmpty()) {
+            return null;
+        }
+
+        JsonObject event = new JsonObject();
+        event.addProperty("type", "cobblemonp");
+        event.add("cobblemons", validSpecies);
+        event.addProperty("minLevel", minLegendaryLevel);
+        event.addProperty("maxLevel", maxLegendaryLevel);
+        event.addProperty("shinyChance", legendaryShinyChance);
+        event.addProperty("chance", chance);
+        return event;
     }
 
     private static class LevelRangeWeight {
@@ -408,7 +473,8 @@ public class LuckyBlockHandlerPocket {
             // 3. weighted/default
             level = getWeightedRandomLevel();
         }
-        boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChancePercent);
+        float effectiveShinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
+        boolean isShiny = forceShiny || (random.nextFloat() * 100F < effectiveShinyChance);
 
         Pokemon pokemon = new Pokemon();
         pokemon.setSpecies(species);
@@ -627,6 +693,21 @@ public class LuckyBlockHandlerPocket {
             note.add("This config is GLOBAL and only read from lvlconfig_types.json (or level_config.json depending on your system).");
 
             defaultConfig.add("_note", note);
+            JsonObject legendarySpawn = new JsonObject();
+            legendarySpawn.addProperty("enabled", false);
+            legendarySpawn.addProperty("chance", 0.25F);
+            legendarySpawn.addProperty("minLevel", 50);
+            legendarySpawn.addProperty("maxLevel", 70);
+            legendarySpawn.addProperty("shinyChance", 0.02F);
+            JsonArray legendarySpecies = new JsonArray();
+            legendarySpecies.add("articuno");
+            legendarySpecies.add("zapdos");
+            legendarySpecies.add("moltres");
+            legendarySpecies.add("mewtwo");
+            legendarySpecies.add("mew");
+            legendarySpawn.add("species", legendarySpecies);
+            defaultConfig.addProperty("__note_legendarySpawn", "Optional helper for regular lucky blocks. Set legendarySpawn.enabled to true to let the regular block spawn legendary Pokemon without manually creating a luckPool event.");
+            defaultConfig.add("legendarySpawn", legendarySpawn);
 
             // Item Vanilla
             JsonObject itemDrop = new JsonObject();

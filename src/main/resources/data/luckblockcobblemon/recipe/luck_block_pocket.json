@@ -1,15 +1,21 @@
 {
+    "fabric:load_conditions": [
+        {
+            "condition": "luckblockcobblemon:config_enabled",
+            "key": "enablePocketRecipe"
+        }
+    ],
     "type": "minecraft:crafting_shaped",
     "category": "misc",
     "key": {
         "P": {
-        "item": "cobblemon:poke_ball"
+            "item": "cobblemon:poke_ball"
         },
         "D": {
-        "item": "minecraft:gold_block"
+            "item": "minecraft:gold_block"
         },
         "H": {
-        "item": "minecraft:chest"
+            "item": "minecraft:chest"
         }
     },
     "pattern": [
@@ -17,8 +23,8 @@
         "PHP",
         "DPD"
     ],
-        "result": {
-            "id": "luckblockcobblemon:luck_block_pocket",
-            "count": 1
+    "result": {
+        "id": "luckblockcobblemon:luck_block_pocket",
+        "count": 1
     }
 }

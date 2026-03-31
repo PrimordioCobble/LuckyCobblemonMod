@@ -1,4 +1,10 @@
 {
+  "fabric:load_conditions": [
+    {
+      "condition": "luckblockcobblemon:config_enabled",
+      "key": "enableStructureWorldgen"
+    }
+  ],
   "structures": [
     { "structure": "luckblockcobblemon:luckblockrandom1", "weight": 3 },
     { "structure": "luckblockcobblemon:luckblockrandom2", "weight": 2 },
