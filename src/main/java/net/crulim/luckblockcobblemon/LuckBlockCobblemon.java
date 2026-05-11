@@ -1,5 +1,7 @@
 package net.crulim.luckblockcobblemon;
 
+
+import net.crulim.luckblockcobblemon.command.LuckyBlockLocateCommand;
 import net.crulim.luckblockcobblemon.block.ModBlocks;
 import net.crulim.luckblockcobblemon.command.StructureCommand;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
@@ -77,6 +79,9 @@ public class LuckBlockCobblemon implements ModInitializer {
 				StructureCommand.register(dispatcher)
 		);
 
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+				LuckyBlockLocateCommand.register(dispatcher)
+		);
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 				dispatcher.register(
 						literal("luckyblock")

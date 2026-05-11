@@ -45,7 +45,7 @@ import java.util.logging.Logger;
 import static net.minecraft.predicate.entity.LocationPredicate.Builder.createStructure;
 
 public class LuckyBlockHandlerPocket {
-    private static final Timer CELEBRATION_TIMER = new Timer("LuckyBlockPocket-150k", true);
+    private static final Timer CELEBRATION_TIMER = new Timer("LuckyBlockPocket-Celebration", true);
     private static final List<LevelRangeWeight> weightedLevels = new ArrayList<>();
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
@@ -90,7 +90,7 @@ public class LuckyBlockHandlerPocket {
                     new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)
             ).getAsJsonObject();
 
-            upsert150kCelebrationEvent(file, json);
+            remove150kCelebrationEventIfPresent(file, json);
 
             breakCreative = json.has("breakCreative") && json.get("breakCreative").getAsBoolean();
 
@@ -162,12 +162,16 @@ public class LuckyBlockHandlerPocket {
         }
     }
 
-    private static void upsert150kCelebrationEvent(File file, JsonObject json) {
+
+
+    private static void remove150kCelebrationEventIfPresent(File file, JsonObject json) {
         if (json == null) {
             return;
         }
 
+        boolean changed = false;
         JsonArray poolArray;
+
         if (json.has("luckPool") && json.get("luckPool").isJsonArray()) {
             poolArray = json.getAsJsonArray("luckPool");
         } else {
@@ -189,95 +193,16 @@ public class LuckyBlockHandlerPocket {
             if ("structure".equals(obj.get("type").getAsString())
                     && "luckblockcobblemon:150k".equals(obj.get("structure").getAsString())) {
                 poolArray.remove(i);
+                changed = true;
             }
         }
 
-        poolArray.add(create150kCelebrationEvent());
-        saveConfigJson(file, json);
-    }
-
-    private static boolean contains150kCelebrationEvent(JsonArray poolArray) {
-        for (JsonElement element : poolArray) {
-            if (element == null || !element.isJsonObject()) {
-                continue;
-            }
-
-            JsonObject obj = element.getAsJsonObject();
-            if (!obj.has("type")) {
-                continue;
-            }
-
-            if (!"structure".equals(obj.get("type").getAsString())) {
-                continue;
-            }
-
-            if (!obj.has("structure")) {
-                continue;
-            }
-
-            if ("luckblockcobblemon:150k".equals(obj.get("structure").getAsString())) {
-                return true;
-            }
+        if (changed) {
+            saveConfigJson(file, json);
         }
-
-        return false;
     }
 
-    private static JsonObject create150kCelebrationEvent() {
-        JsonObject event150k = new JsonObject();
-        event150k.addProperty("type", "structure");
-        event150k.addProperty("chance", 1.55F);
-        event150k.addProperty("structure", "luckblockcobblemon:150k");
-        event150k.addProperty("goldenFireworksMoment", true);
 
-        event150k.addProperty("startDate", "2026-03-31");
-        event150k.addProperty("endDate", "2026-04-14");
-
-        event150k.addProperty("showMessage", true);
-        event150k.addProperty("messageTitle", "150K Downloads!");
-        event150k.addProperty("messageSubtitle", "Thank you!");
-        event150k.addProperty("chatMessage", "The CobbleKanto team thanks you for being part of this journey!");
-        event150k.addProperty("messageRadius", 64);
-
-        event150k.addProperty("forwardDistance", 5);
-
-        event150k.addProperty("skyHeight", 10);
-        event150k.addProperty("fireworkCount", 10);
-        event150k.addProperty("particleBursts", 8);
-        event150k.addProperty("itemRainCount", 18);
-        event150k.addProperty("pokemonRainCount", 1);
-
-        event150k.addProperty("secondWaveDelayMs", 1200);
-        event150k.addProperty("secondWaveFireworkCount", 10);
-        event150k.addProperty("secondWaveParticleBursts", 12);
-
-        event150k.addProperty("effectOffsetX", 0);
-        event150k.addProperty("effectOffsetY", 0);
-        event150k.addProperty("effectOffsetZ", 0);
-
-        event150k.addProperty("effectRadiusX", 2);
-        event150k.addProperty("effectRadiusZ", 2);
-
-        event150k.addProperty("celebrationPokemonMinLevel", 70);
-        event150k.addProperty("celebrationPokemonMaxLevel", 70);
-        event150k.addProperty("celebrationPokemonShinyChance", 0.02F);
-
-        JsonArray skyItems = new JsonArray();
-        skyItems.add("minecraft:gold_ingot");
-        skyItems.add("minecraft:gold_nugget");
-        skyItems.add("cobblemon:rare_candy");
-        event150k.add("skyItems", skyItems);
-
-        JsonArray celebrationPokemon = new JsonArray();
-        celebrationPokemon.add("mewtwo");
-        celebrationPokemon.add("gholdengo");
-        celebrationPokemon.add("zapdos");
-        celebrationPokemon.add("charizard_shiny");
-        celebrationPokemon.add("ditto");
-        event150k.add("celebrationPokemon", celebrationPokemon);
-
-        return event150k;
-    }
 
     private static void saveConfigJson(File file, JsonObject json) {
         try {
@@ -1363,8 +1288,6 @@ public class LuckyBlockHandlerPocket {
             multiCobblemonSpawn.addProperty("maxLevel", 0);
             multiCobblemonSpawn.addProperty("shinyChance", 0.02F);
             pool.add(multiCobblemonSpawn);
-
-            pool.add(create150kCelebrationEvent());
             defaultConfig.add("luckPool", pool);
 
 
