@@ -1,9 +1,11 @@
 package net.crulim.luckblockcobblemon;
 
 
+import net.crulim.luckblockcobblemon.command.LuckyBlockGiveCommand;
 import net.crulim.luckblockcobblemon.command.LuckyBlockLocateCommand;
 import net.crulim.luckblockcobblemon.block.ModBlocks;
 import net.crulim.luckblockcobblemon.command.StructureCommand;
+import net.crulim.luckblockcobblemon.config.LockedLuckyBlockTierConfig;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
 import net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerPocket;
 import net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerVanilla;
@@ -47,6 +49,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LuckyBlockSettingsConfig.load();
+		LockedLuckyBlockTierConfig.load();
 		ResourceConditions.register(ConfigEnabledCondition.TYPE);
 
 		ModWorldGen.init();
@@ -70,6 +73,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 
 		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
 			LuckyBlockSettingsConfig.load();
+			LockedLuckyBlockTierConfig.load();
 			LuckyBlockHandlerPocket.loadConfig();
 			LuckyBlockHandlerVanilla.loadConfig();
 			PocketLuckHandler.loadConfig();
@@ -82,12 +86,17 @@ public class LuckBlockCobblemon implements ModInitializer {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 				LuckyBlockLocateCommand.register(dispatcher)
 		);
+
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+				LuckyBlockGiveCommand.register(dispatcher)
+		);
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 				dispatcher.register(
 						literal("luckyblock")
 								.then(literal("reload")
 										.executes(context -> {
 											LuckyBlockSettingsConfig.load();
+											LockedLuckyBlockTierConfig.reload();
 											LuckyBlockHandlerPocket.reloadConfig();
 											PocketLuckHandler.reloadConfig();
 											LuckyBlockHandlerVanilla.reloadConfig();

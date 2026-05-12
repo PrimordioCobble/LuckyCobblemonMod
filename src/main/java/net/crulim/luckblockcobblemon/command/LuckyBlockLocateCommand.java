@@ -32,6 +32,7 @@ public class LuckyBlockLocateCommand {
         LUCKY_BLOCKS.add(ModBlocks.LUCK_BLOCK_POCKET_ELETRIC);
         LUCKY_BLOCKS.add(ModBlocks.LUCK_BLOCK_POCKET_FAIRY);
         LUCKY_BLOCKS.add(ModBlocks.LUCK_BLOCK_VANILLA);
+        LUCKY_BLOCKS.addAll(ModBlocks.getAllLockedBlocks());
     }
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {

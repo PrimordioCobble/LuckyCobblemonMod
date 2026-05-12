@@ -113,6 +113,14 @@ public class PocketLuckHandler {
 
     public static void trigger(ServerWorld world, BlockPos pos, Identifier blockId) {
         String key = blockId.getPath();
+        triggerFromPool(world, pos, key, -1, -1);
+    }
+
+    public static void triggerLocked(ServerWorld world, BlockPos pos, String basePoolKey, int forcedMinLevel, int forcedMaxLevel) {
+        triggerFromPool(world, pos, basePoolKey, forcedMinLevel, forcedMaxLevel);
+    }
+
+    private static void triggerFromPool(ServerWorld world, BlockPos pos, String key, int forcedMinLevel, int forcedMaxLevel) {
         List<JsonObject> pool = POOLS.computeIfAbsent(key, PocketLuckHandler::loadOrCreate);
 
         if (pool.isEmpty()) return;
@@ -120,12 +128,38 @@ public class PocketLuckHandler {
         JsonObject chosen = pick(pool);
         if (chosen == null) return;
 
-        String type = chosen.get("type").getAsString();
+        JsonObject eventToExecute = chosen.deepCopy();
+        if (forcedMinLevel > 0 && forcedMaxLevel > 0) {
+            applyLockedLevelRange(eventToExecute, forcedMinLevel, forcedMaxLevel);
+        }
+
+        String type = eventToExecute.get("type").getAsString();
         switch (type) {
-            case "item" -> dropItems(world, pos, chosen);
-            case "pokemon" -> spawnPokemon(world, pos, chosen, false);
+            case "item" -> dropItems(world, pos, eventToExecute);
+            case "pokemon" -> spawnPokemon(world, pos, eventToExecute, false);
             default -> System.out.println("[PocketLuckHandler] Tipo desconhecido: " + type);
         }
+    }
+
+    private static void applyLockedLevelRange(JsonObject event, int minLevel, int maxLevel) {
+        if (event == null || !event.has("type")) {
+            return;
+        }
+
+        String type = event.get("type").getAsString();
+        if ("pokemon".equals(type)) {
+            event.addProperty("minLevel", minLevel);
+            event.addProperty("maxLevel", maxLevel);
+        }
+    }
+
+    private static int randomLevelBetween(int min, int max) {
+        if (max < min) {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+        return min + random.nextInt(max - min + 1);
     }
 
     private static class LevelRangeWeight {
@@ -202,7 +236,7 @@ public class PocketLuckHandler {
                         if (roll <= cumulative) {
                             int minLevel = objLvl.get("min").getAsInt();
                             int maxLevel = objLvl.get("max").getAsInt();
-                            return random.nextBetween(minLevel, maxLevel + 1);
+                            return randomLevelBetween(minLevel, maxLevel);
                         }
                     }
                 }
@@ -224,7 +258,7 @@ public class PocketLuckHandler {
                     int min = json.get("minLevel").getAsInt();
                     int max = json.get("maxLevel").getAsInt();
                     if (min > 0 && max > 0) {
-                        return random.nextBetween(min, max + 1);
+                        return randomLevelBetween(min, max);
                     }
                 }
                 // 2. timeLeveling_type
@@ -248,7 +282,7 @@ public class PocketLuckHandler {
                                 if (roll <= cumulative) {
                                     int minL = objLvl.get("min").getAsInt();
                                     int maxL = objLvl.get("max").getAsInt();
-                                    return random.nextBetween(minL, maxL + 1);
+                                    return randomLevelBetween(minL, maxL);
                                 }
                             }
                         }
@@ -267,7 +301,7 @@ public class PocketLuckHandler {
                         if (roll < cumulative) {
                             int minL = obj.get("min").getAsInt();
                             int maxL = obj.get("max").getAsInt();
-                            return random.nextBetween(minL, maxL + 1);
+                            return randomLevelBetween(minL, maxL);
                         }
                     }
                 }
@@ -329,7 +363,7 @@ public class PocketLuckHandler {
         for (LevelRangeWeight range : weights) {
             cumulative += range.chance;
             if (roll < cumulative) {
-                return random.nextBetween(range.min, range.max + 1);
+                return randomLevelBetween(range.min, range.max);
             }
         }
 
@@ -786,6 +820,28 @@ public class PocketLuckHandler {
         return "default";
     }
 
+    private static int getLevelForPokemonEvent(ServerWorld world, BlockPos pos, JsonObject data) {
+        if (data.has("level") && data.get("level").getAsInt() > 0) {
+            return data.get("level").getAsInt();
+        }
+
+        if (data.has("minLevel") && data.has("maxLevel")) {
+            int min = data.get("minLevel").getAsInt();
+            int max = data.get("maxLevel").getAsInt();
+            if (min > 0 && max > 0) {
+                if (max < min) {
+                    int temp = min;
+                    min = max;
+                    max = temp;
+                }
+                return randomLevelBetween(min, max);
+            }
+        }
+
+        String typeKey = getTypeFromBlockName(pos, world);
+        return getEffectiveLevel(world, typeKey);
+    }
+
     private static void spawnPokemon(ServerWorld world, BlockPos pos, JsonObject data, boolean forceShiny) {
         if (!data.has("pokemons")) {
             System.out.println("[PocketLuckHandler] Nenhuma lista de pokemons encontrada.");
@@ -807,8 +863,7 @@ public class PocketLuckHandler {
         Pokemon pokemon = new Pokemon();
         pokemon.setSpecies(species);
 
-        String typeKey = getTypeFromBlockName(pos, world);
-        int level = getEffectiveLevel(world, typeKey);
+        int level = getLevelForPokemonEvent(world, pos, data);
         pokemon.setLevel(level);
 
         float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;

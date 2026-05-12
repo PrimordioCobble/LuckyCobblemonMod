@@ -1,18 +1,23 @@
 package net.crulim.luckblockcobblemon.block;
 
 import net.crulim.luckblockcobblemon.block.custom.BaseDirectionalBlock;
+import net.crulim.luckblockcobblemon.config.LockedLuckyBlockTierConfig;
 import net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerPocket;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+
+import java.util.Optional;
 
 public class LuckBlockPocket extends BaseDirectionalBlock {
 
@@ -45,7 +50,15 @@ public class LuckBlockPocket extends BaseDirectionalBlock {
                     1.0f + world.getRandom().nextFloat() * 0.2f
             );
 
-            LuckyBlockHandlerPocket.triggerLuckEvent(serverWorld, pos);
+            Identifier blockId = Registries.BLOCK.getId(state.getBlock());
+            Optional<LockedLuckyBlockTierConfig.LockedBlockInfo> lockedInfo = LockedLuckyBlockTierConfig.resolveLockedBlock(blockId);
+
+            if (lockedInfo.isPresent() && lockedInfo.get().defaultType()) {
+                LockedLuckyBlockTierConfig.LevelRange range = lockedInfo.get().range();
+                LuckyBlockHandlerPocket.triggerLockedLuckEvent(serverWorld, pos, range.minLevel(), range.maxLevel());
+            } else {
+                LuckyBlockHandlerPocket.triggerLuckEvent(serverWorld, pos);
+            }
         }
         return super.onBreak(world, pos, state, player);
     }

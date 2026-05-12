@@ -67,6 +67,15 @@ public class LuckyBlockHandlerPocket {
         return breakCreative;
     }
 
+    private static int randomLevelBetween(int min, int max) {
+        if (max < min) {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+        return min + random.nextInt(max - min + 1);
+    }
+
     private static class TimeBasedLevelRange {
         int minDays;
         int maxDays;
@@ -310,7 +319,7 @@ public class LuckyBlockHandlerPocket {
         for (LevelRangeWeight range : weightedLevels) {
             cumulative += range.chance;
             if (roll < cumulative) {
-                return random.nextBetween(range.min, range.max + 1);
+                return randomLevelBetween(range.min, range.max);
             }
         }
 
@@ -334,7 +343,7 @@ public class LuckyBlockHandlerPocket {
                 for (LevelRangeWeight range : timeRange.levels) {
                     cumulative += range.chance;
                     if (roll < cumulative) {
-                        return random.nextBetween(range.min, range.max + 1);
+                        return randomLevelBetween(range.min, range.max);
                     }
                 }
             }
@@ -351,6 +360,14 @@ public class LuckyBlockHandlerPocket {
     }
 
     public static void triggerLuckEvent(ServerWorld world, BlockPos pos) {
+        triggerLuckEventInternal(world, pos, -1, -1);
+    }
+
+    public static void triggerLockedLuckEvent(ServerWorld world, BlockPos pos, int forcedMinLevel, int forcedMaxLevel) {
+        triggerLuckEventInternal(world, pos, forcedMinLevel, forcedMaxLevel);
+    }
+
+    private static void triggerLuckEventInternal(ServerWorld world, BlockPos pos, int forcedMinLevel, int forcedMaxLevel) {
         if (luckPool.isEmpty()) {
             System.out.println("[LuckyBlockPocket] Warning: Luck pool is empty!");
             return;
@@ -368,7 +385,27 @@ public class LuckyBlockHandlerPocket {
             return;
         }
 
-        executeLuck(world, pos, selected);
+        JsonObject eventToExecute = selected.deepCopy();
+        if (forcedMinLevel > 0 && forcedMaxLevel > 0) {
+            applyLockedLevelRange(eventToExecute, forcedMinLevel, forcedMaxLevel);
+        }
+
+        executeLuck(world, pos, eventToExecute);
+    }
+
+    private static void applyLockedLevelRange(JsonObject event, int minLevel, int maxLevel) {
+        if (event == null || !event.has("type")) {
+            return;
+        }
+
+        String type = event.get("type").getAsString();
+        if ("cobblemonp".equals(type)
+                || "random_cobblemonp".equals(type)
+                || "shiny_cobblemonp".equals(type)
+                || "multi_cobblemonp".equals(type)) {
+            event.addProperty("minLevel", minLevel);
+            event.addProperty("maxLevel", maxLevel);
+        }
     }
 
     private static boolean isEventCurrentlyActive(JsonObject event) {
@@ -560,11 +597,13 @@ public class LuckyBlockHandlerPocket {
 
         int level;
 
-        if (data.has("minLevel") && data.has("maxLevel")) {
+        if (data.has("level") && data.get("level").getAsInt() > 0) {
+            level = data.get("level").getAsInt();
+        } else if (data.has("minLevel") && data.has("maxLevel")) {
             int minLevelLocal = data.get("minLevel").getAsInt();
             int maxLevelLocal = data.get("maxLevel").getAsInt();
             if (minLevelLocal > 0 && maxLevelLocal > 0) {
-                level = random.nextBetween(minLevelLocal, maxLevelLocal + 1);
+                level = randomLevelBetween(minLevelLocal, maxLevelLocal);
             } else if (!timeBasedLeveling.isEmpty()) {
                 int timeBased = getTimeBasedLevel(world);
                 level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
@@ -627,7 +666,7 @@ public class LuckyBlockHandlerPocket {
             int min = data.get("minLevel").getAsInt();
             int max = data.get("maxLevel").getAsInt();
             if (min > 0 && max > 0) {
-                level = random.nextBetween(min, max + 1);
+                level = randomLevelBetween(min, max);
             } else if (!timeBasedLeveling.isEmpty()) {
                 int timeBased = getTimeBasedLevel(world);
                 level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
@@ -675,7 +714,7 @@ public class LuckyBlockHandlerPocket {
                 int minLevelLocal = data.get("minLevel").getAsInt();
                 int maxLevelLocal = data.get("maxLevel").getAsInt();
                 if (minLevelLocal > 0 && maxLevelLocal > 0) {
-                    level = random.nextBetween(minLevelLocal, maxLevelLocal + 1);
+                    level = randomLevelBetween(minLevelLocal, maxLevelLocal);
                 } else if (!timeBasedLeveling.isEmpty()) {
                     int timeBased = getTimeBasedLevel(world);
                     level = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
