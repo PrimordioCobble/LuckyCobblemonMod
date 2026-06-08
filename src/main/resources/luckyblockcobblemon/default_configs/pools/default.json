@@ -1,12 +1,9 @@
 {
   "configVersion": 2,
   "_comment": "GLOBAL default Lucky Block pool. This is the public/default distribution for the mod and is NOT Kanto-only. Edit this file only if you want to customize the regular Lucky Block.",
-  "breakCreative": false,
   "_note": [
-    "INFO: The 'breakCreative' property controls whether Lucky Blocks can be broken in creative mode.",
-    "If set to true, players in creative mode will be able to break and activate Lucky Blocks.",
-    "If set to false, Lucky Blocks cannot be activated in creative mode.",
-    "This config is GLOBAL and only read from lvlconfig_types.json (or level_config.json depending on your system)."
+    "Creative-mode activation is controlled by config/luckyblockcobblemon/settings.json.",
+    "This pool controls regular Lucky Block events only."
   ],
   "__note_legendarySpawn": "Optional helper for regular lucky blocks. Set legendarySpawn.enabled to true to let the regular block spawn legendary Pokemon without manually creating a luckPool event.",
   "legendarySpawn": {

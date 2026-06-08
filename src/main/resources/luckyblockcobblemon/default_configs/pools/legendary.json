@@ -1,11 +1,8 @@
 {
   "configVersion": 2,
   "_comment": "GLOBAL Legendary Lucky Block pool. This is the public/default legendary distribution for the mod and is NOT Kanto-only.",
-  "breakCreative": false,
   "_note": [
-    "INFO: The breakCreative property controls whether Lucky Blocks can be broken in creative mode.",
-    "If set to true, players in creative mode will be able to break and activate Lucky Blocks.",
-    "If set to false, Lucky Blocks cannot be activated in creative mode."
+    "Creative-mode activation is controlled by config/luckyblockcobblemon/settings.json."
   ],
   "legendaryPool": [
     "articuno",

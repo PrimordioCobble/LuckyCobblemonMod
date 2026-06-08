@@ -104,9 +104,6 @@ public class LuckyBlockHandlerPocket {
 
             remove150kCelebrationEventIfPresent(LuckyBlockConfigManager.defaultPoolFile().toFile(), json);
 
-            if (json.has("breakCreative")) {
-                breakCreative = json.get("breakCreative").getAsBoolean();
-            }
 
             JsonArray poolArray = LuckyBlockConfigManager.getEvents(json);
             for (JsonElement element : poolArray) {
@@ -1248,14 +1245,9 @@ public class LuckyBlockHandlerPocket {
         try {
             JsonObject defaultConfig = new JsonObject();
             JsonArray pool = new JsonArray();
-            defaultConfig.addProperty("breakCreative", false);
-
             JsonArray note = new JsonArray();
-            note.add("INFO: The 'breakCreative' property controls whether Lucky Blocks can be broken in creative mode.");
-            note.add("If set to true, players in creative mode will be able to break and activate Lucky Blocks.");
-            note.add("If set to false, Lucky Blocks cannot be activated in creative mode.");
-            note.add("This config is GLOBAL and only read from lvlconfig_types.json (or level_config.json depending on your system).");
-
+            note.add("Creative-mode activation is controlled by config/luckyblockcobblemon/settings.json.");
+            note.add("This pool controls regular Lucky Block events only.");
             defaultConfig.add("_note", note);
             JsonObject legendarySpawn = new JsonObject();
             legendarySpawn.addProperty("enabled", false);

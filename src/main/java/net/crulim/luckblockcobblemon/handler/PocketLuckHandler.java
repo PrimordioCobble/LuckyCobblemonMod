@@ -55,9 +55,6 @@ public class PocketLuckHandler {
             JsonObject root = loadOrCreateRoot(type);
             POOL_CONFIGS.put(type, root);
             POOLS.put(type, readValidPool(root));
-            if (root.has("breakCreative") && root.get("breakCreative").getAsBoolean()) {
-                breakCreative = true;
-            }
         }
 
         System.out.println("[PocketLuckHandler] Loaded themed pools from config/luckyblockcobblemon/pools/themed/.");

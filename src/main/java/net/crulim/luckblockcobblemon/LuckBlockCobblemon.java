@@ -4,7 +4,6 @@ package net.crulim.luckblockcobblemon;
 import net.crulim.luckblockcobblemon.command.LuckyBlockGiveCommand;
 import net.crulim.luckblockcobblemon.command.LuckyBlockLocateCommand;
 import net.crulim.luckblockcobblemon.block.ModBlocks;
-import net.crulim.luckblockcobblemon.command.StructureCommand;
 import net.crulim.luckblockcobblemon.config.LockedLuckyBlockTierConfig;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
 import net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerPocket;
@@ -79,9 +78,6 @@ public class LuckBlockCobblemon implements ModInitializer {
 			PocketLuckHandler.loadConfig();
 		});
 
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-				StructureCommand.register(dispatcher)
-		);
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 				LuckyBlockLocateCommand.register(dispatcher)

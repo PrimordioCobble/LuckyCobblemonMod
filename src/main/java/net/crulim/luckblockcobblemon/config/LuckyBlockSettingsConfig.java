@@ -48,6 +48,17 @@ public final class LuckyBlockSettingsConfig {
             breakCreativeDefaultLuckyBlock = getBoolean(json, "breakCreativeDefaultLuckyBlock", getLegacyBreakCreativeFromDefaultPool(false));
             breakCreativeThemedLuckyBlocks = getBoolean(json, "breakCreativeThemedLuckyBlocks", getLegacyBreakCreativeFromThemedConfig(false));
             breakCreativeLegendaryLuckyBlock = getBoolean(json, "breakCreativeLegendaryLuckyBlock", getLegacyBreakCreativeFromLegendaryPool(false));
+
+            LOGGER.info("[LuckyBlockSettingsConfig] Loaded settings: "
+                    + "enablePocketRecipe=" + enablePocketRecipe
+                    + ", enableVanillaRecipe=" + enableVanillaRecipe
+                    + ", enablePocketWorldgen=" + enablePocketWorldgen
+                    + ", enableStructureWorldgen=" + enableStructureWorldgen
+                    + ", enableStructureEvents=" + enableStructureEvents
+                    + ", strictConfigEvents=" + strictConfigEvents
+                    + ", breakCreativeDefaultLuckyBlock=" + breakCreativeDefaultLuckyBlock
+                    + ", breakCreativeThemedLuckyBlocks=" + breakCreativeThemedLuckyBlocks
+                    + ", breakCreativeLegendaryLuckyBlock=" + breakCreativeLegendaryLuckyBlock);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "[LuckyBlockSettingsConfig] Failed to load settings. Using safe defaults.", e);
             enablePocketRecipe = true;

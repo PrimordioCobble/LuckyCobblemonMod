@@ -108,9 +108,6 @@ public class LuckyBlockHandlerVanilla {
             );
             loadedConfig = json;
 
-            if (json.has("breakCreative")) {
-                breakCreative = json.get("breakCreative").getAsBoolean();
-            }
 
             JsonArray pool = json.has("legendaryPool") && json.get("legendaryPool").isJsonArray()
                     ? json.getAsJsonArray("legendaryPool")

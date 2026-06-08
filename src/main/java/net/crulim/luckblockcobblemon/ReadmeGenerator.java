@@ -88,10 +88,6 @@ public class ReadmeGenerator {
                 - Finds Lucky Blocks in loaded chunks.
                 - Requires admin/operator permission.
 
-                /spawnluckornot
-                - Spawns the LuckOrNot structure.
-                - Requires admin/operator permission.
-
                 Legacy compatibility:
 
                 Older config files are still supported when the new files do not exist yet.
