@@ -93,6 +93,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 				dispatcher.register(
 						literal("luckyblock")
+								.requires(source -> source.hasPermissionLevel(2))
 								.then(literal("reload")
 										.executes(context -> {
 											LuckyBlockSettingsConfig.load();
@@ -101,7 +102,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 											PocketLuckHandler.reloadConfig();
 											LuckyBlockHandlerVanilla.reloadConfig();
 											context.getSource().sendFeedback(
-													() -> Text.literal("Lucky Block configs reloaded. If you changed luckyblock_settings.json, use /reload for recipes and restart the server for worldgen changes."),
+													() -> Text.literal("Lucky Block Cobblemon configs reloaded from config/luckyblockcobblemon/. Restart the server for worldgen changes."),
 													false
 											);
 											return 1;

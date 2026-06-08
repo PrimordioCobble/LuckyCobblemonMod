@@ -7,6 +7,8 @@ import com.cobblemon.mod.common.pokemon.Species;
 import com.cobblemon.mod.common.api.moves.Move;
 import com.cobblemon.mod.common.api.moves.MoveTemplate;
 import com.google.gson.*;
+import net.crulim.luckblockcobblemon.config.LuckyBlockConfigManager;
+import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -52,7 +54,6 @@ public class LuckyBlockHandlerPocket {
             .disableHtmlEscaping()  // <- isso resolve!
             .create();
     private static final Random random = Random.create();
-    private static final String CONFIG_PATH = "config/luckyblock_config.json";
     private static final Logger LOGGER = Logger.getLogger(LuckyBlockHandlerPocket.class.getName());
 
     private static final List<JsonObject> luckPool = new ArrayList<>();
@@ -89,52 +90,52 @@ public class LuckyBlockHandlerPocket {
     }
 
     public static void loadConfig() {
+        luckPool.clear();
+        weightedLevels.clear();
+        timeBasedLeveling.clear();
+        breakCreative = LuckyBlockSettingsConfig.isDefaultLuckyBlockBreakCreativeAllowed();
+
         try {
-            File file = new File(CONFIG_PATH);
-            if (!file.exists()) {
-                generateDefaultConfig(file);
+            JsonObject json = LuckyBlockConfigManager.loadPoolObjectWithLegacyMigration(
+                    LuckyBlockConfigManager.defaultPoolFile(),
+                    LuckyBlockConfigManager.legacyDefaultPoolFile(),
+                    LuckyBlockHandlerPocket::createDefaultPoolConfig
+            );
+
+            remove150kCelebrationEventIfPresent(LuckyBlockConfigManager.defaultPoolFile().toFile(), json);
+
+            if (json.has("breakCreative")) {
+                breakCreative = json.get("breakCreative").getAsBoolean();
             }
 
-            JsonObject json = JsonParser.parseReader(
-                    new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)
-            ).getAsJsonObject();
-
-            remove150kCelebrationEventIfPresent(file, json);
-
-            breakCreative = json.has("breakCreative") && json.get("breakCreative").getAsBoolean();
-
-            luckPool.clear();
-            weightedLevels.clear();
-            timeBasedLeveling.clear();
-
-            if (json.has("luckPool") && json.get("luckPool").isJsonArray()) {
-                JsonArray poolArray = json.getAsJsonArray("luckPool");
-                for (JsonElement element : poolArray) {
-                    if (element != null && element.isJsonObject()) {
-                        luckPool.add(element.getAsJsonObject());
-                    }
+            JsonArray poolArray = LuckyBlockConfigManager.getEvents(json);
+            for (JsonElement element : poolArray) {
+                if (element != null && element.isJsonObject()) {
+                    luckPool.add(element.getAsJsonObject());
                 }
             }
-
-            appendConfiguredLegendarySpawn(json);
 
             shinyChancePercent = json.has("shinyChancePercent")
                     ? json.get("shinyChancePercent").getAsFloat()
                     : 5.0F;
 
-            if (json.has("levelWeighting")) {
+            if (json.has("levelWeighting") && json.get("levelWeighting").isJsonArray()) {
                 JsonArray levelArray = json.getAsJsonArray("levelWeighting");
                 for (JsonElement el : levelArray) {
+                    if (el == null || !el.isJsonObject()) continue;
                     JsonObject obj = el.getAsJsonObject();
+                    if (!obj.has("min") || !obj.has("max") || !obj.has("chance")) continue;
                     int min = obj.get("min").getAsInt();
                     int max = obj.get("max").getAsInt();
                     float chance = obj.get("chance").getAsFloat();
-                    weightedLevels.add(new LevelRangeWeight(min, max, chance));
+                    if (chance > 0F) {
+                        weightedLevels.add(new LevelRangeWeight(min, max, chance));
+                    }
                 }
 
                 minLevel = -1;
                 maxLevel = -1;
-            } else if (json.has("levelRange")) {
+            } else if (json.has("levelRange") && json.get("levelRange").isJsonObject()) {
                 JsonObject levelRange = json.getAsJsonObject("levelRange");
                 minLevel = levelRange.has("min") ? levelRange.get("min").getAsInt() : 5;
                 maxLevel = levelRange.has("max") ? levelRange.get("max").getAsInt() : 30;
@@ -143,30 +144,41 @@ public class LuckyBlockHandlerPocket {
                 maxLevel = 30;
             }
 
-            if (json.has("timeLeveling")) {
+            if (json.has("timeLeveling") && json.get("timeLeveling").isJsonArray()) {
                 JsonArray timeArray = json.getAsJsonArray("timeLeveling");
                 for (JsonElement timeElement : timeArray) {
+                    if (timeElement == null || !timeElement.isJsonObject()) continue;
                     JsonObject timeObj = timeElement.getAsJsonObject();
+                    if (!timeObj.has("minDays") || !timeObj.has("maxDays") || !timeObj.has("levels") || !timeObj.get("levels").isJsonArray()) continue;
                     int minDays = timeObj.get("minDays").getAsInt();
                     int maxDays = timeObj.get("maxDays").getAsInt();
                     List<LevelRangeWeight> timeWeights = new ArrayList<>();
 
                     JsonArray levels = timeObj.getAsJsonArray("levels");
                     for (JsonElement lvl : levels) {
+                        if (lvl == null || !lvl.isJsonObject()) continue;
                         JsonObject obj = lvl.getAsJsonObject();
+                        if (!obj.has("min") || !obj.has("max") || !obj.has("chance")) continue;
                         int min = obj.get("min").getAsInt();
                         int max = obj.get("max").getAsInt();
                         float chance = obj.get("chance").getAsFloat();
-                        timeWeights.add(new LevelRangeWeight(min, max, chance));
+                        if (chance > 0F) {
+                            timeWeights.add(new LevelRangeWeight(min, max, chance));
+                        }
                     }
 
-                    timeBasedLeveling.add(new TimeBasedLevelRange(minDays, maxDays, timeWeights));
+                    if (!timeWeights.isEmpty()) {
+                        timeBasedLeveling.add(new TimeBasedLevelRange(minDays, maxDays, timeWeights));
+                    }
                 }
             }
 
-            System.out.println("[LuckyBlockPocket] Config loaded successfully.");
+            System.out.println("[LuckyBlockPocket] Loaded config/luckyblockcobblemon/pools/default.json with " + luckPool.size() + " configured events.");
         } catch (Exception e) {
-            System.out.println("[LuckyBlockPocket] Failed to load config: " + e.getMessage());
+            luckPool.clear();
+            weightedLevels.clear();
+            timeBasedLeveling.clear();
+            System.out.println("[LuckyBlockPocket] Failed to load default pool. No fallback events will run: " + e.getMessage());
             LOGGER.log(Level.SEVERE, "Erro ao carregar configuração", e);
         }
     }
@@ -181,11 +193,12 @@ public class LuckyBlockHandlerPocket {
         boolean changed = false;
         JsonArray poolArray;
 
-        if (json.has("luckPool") && json.get("luckPool").isJsonArray()) {
+        if (json.has("events") && json.get("events").isJsonArray()) {
+            poolArray = json.getAsJsonArray("events");
+        } else if (json.has("luckPool") && json.get("luckPool").isJsonArray()) {
             poolArray = json.getAsJsonArray("luckPool");
         } else {
-            poolArray = new JsonArray();
-            json.add("luckPool", poolArray);
+            return;
         }
 
         for (int i = poolArray.size() - 1; i >= 0; i--) {
@@ -462,6 +475,9 @@ public class LuckyBlockHandlerPocket {
                 }
                 case "cobblemonp", "random_cobblemonp", "shiny_cobblemonp" -> valid.add(event);
                 case "structure" -> {
+                    if (!LuckyBlockSettingsConfig.areStructureEventsEnabled()) {
+                        continue;
+                    }
                     if ((event.has("structure") && !event.get("structure").getAsString().isEmpty()) ||
                             (event.has("structures") && !event.getAsJsonArray("structures").isEmpty())) {
                         valid.add(event);
@@ -494,10 +510,9 @@ public class LuckyBlockHandlerPocket {
             }
         }
 
-        // Se todas as chances forem 0, usar a lista original como fallback
         if (totalChance <= 0F || validPool.isEmpty()) {
-            //System.out.println("[LuckyBlockPocket] Todas as chances são 0. Escolhendo evento aleatório da lista.");
-            return pool.get(random.nextInt(pool.size()));
+            System.out.println("[LuckyBlockPocket] No event selected because all configured chances are 0 or invalid.");
+            return null;
         }
 
         float roll = random.nextFloat() * totalChance;
@@ -756,6 +771,11 @@ public class LuckyBlockHandlerPocket {
 
 
     private static void spawnStructure(ServerWorld world, BlockPos pos, JsonObject data) {
+        if (!LuckyBlockSettingsConfig.areStructureEventsEnabled()) {
+            System.out.println("[LuckyBlockPocket] Structure event blocked by config/luckyblockcobblemon/settings.json (enableStructureEvents=false).");
+            return;
+        }
+
         String structureId;
         JsonObject selectedStructureData = null;
 
@@ -1179,6 +1199,49 @@ public class LuckyBlockHandlerPocket {
         obj.addProperty("id", id);
         obj.addProperty("weight", weight);
         return obj;
+    }
+
+
+    private static JsonObject createDefaultPoolConfig() {
+        JsonObject bundled = LuckyBlockConfigManager.loadBundledObject("luckyblockcobblemon/default_configs/pools/default.json");
+        if (bundled != null) {
+            return bundled;
+        }
+
+        JsonObject fallback = new JsonObject();
+        fallback.addProperty("configVersion", LuckyBlockConfigManager.CONFIG_VERSION);
+        fallback.addProperty("_comment", "Emergency fallback default Lucky Block pool. The bundled default config was not found.");
+
+        JsonArray events = new JsonArray();
+
+        JsonObject itemDrop = new JsonObject();
+        itemDrop.addProperty("type", "item");
+        itemDrop.addProperty("chance", 2.5F);
+        JsonArray items = new JsonArray();
+        items.add("minecraft:diamond");
+        items.add("minecraft:gold_ingot");
+        items.add("minecraft:iron_ingot");
+        itemDrop.add("items", items);
+        itemDrop.addProperty("min", 1);
+        itemDrop.addProperty("max", 6);
+        events.add(itemDrop);
+
+        JsonObject cobblemonSpawn = new JsonObject();
+        cobblemonSpawn.addProperty("type", "cobblemonp");
+        cobblemonSpawn.addProperty("chance", 10.98F);
+        cobblemonSpawn.addProperty("minLevel", 5);
+        cobblemonSpawn.addProperty("maxLevel", 30);
+        JsonArray cobblemons = new JsonArray();
+        cobblemons.add("bulbasaur");
+        cobblemons.add("charmander");
+        cobblemons.add("squirtle");
+        cobblemons.add("pikachu");
+        cobblemons.add("eevee");
+        cobblemonSpawn.add("cobblemons", cobblemons);
+        events.add(cobblemonSpawn);
+
+        fallback.add("events", events);
+        return fallback;
     }
 
     private static void generateDefaultConfig(File file) {

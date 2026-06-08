@@ -17,6 +17,8 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -30,7 +32,6 @@ import java.util.logging.Logger;
 public final class LockedLuckyBlockTierConfig {
     private static final Logger LOGGER = Logger.getLogger(LockedLuckyBlockTierConfig.class.getName());
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-    private static final String CONFIG_FILE_NAME = "luckyblock_locked_tiers.json";
 
     private static final Map<Integer, LevelRange> TIERS = new LinkedHashMap<>();
 
@@ -213,7 +214,28 @@ public final class LockedLuckyBlockTierConfig {
     }
 
     private static File getConfigFile() {
-        return new File(FabricLoader.getInstance().getGameDir().toFile(), "config/" + CONFIG_FILE_NAME);
+        LuckyBlockConfigManager.ensureDirectories();
+        Path newPath = LuckyBlockConfigManager.tiersFile();
+        Path legacyPath = LuckyBlockConfigManager.legacyTiersFile();
+
+        if (Files.exists(legacyPath) && LuckyBlockConfigManager.shouldMigrateLegacy(newPath, LockedLuckyBlockTierConfig::createDefaultConfigObject)) {
+            try {
+                JsonObject legacyJson;
+                try (Reader reader = new InputStreamReader(new FileInputStream(legacyPath.toFile()), StandardCharsets.UTF_8)) {
+                    legacyJson = JsonParser.parseReader(reader).getAsJsonObject();
+                }
+                if (!legacyJson.has("configVersion")) {
+                    legacyJson.addProperty("configVersion", LuckyBlockConfigManager.CONFIG_VERSION);
+                }
+                legacyJson.addProperty("_legacySource", legacyPath.toString());
+                LuckyBlockConfigManager.writeJson(newPath, legacyJson);
+                LOGGER.info("[LockedLuckyBlockTierConfig] Migrated legacy tiers config to " + newPath);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "[LockedLuckyBlockTierConfig] Failed to migrate legacy tiers config.", e);
+            }
+        }
+
+        return newPath.toFile();
     }
 
     private static void generateDefaultConfig(File file) {
@@ -223,18 +245,7 @@ public final class LockedLuckyBlockTierConfig {
                 parent.mkdirs();
             }
 
-            JsonObject root = new JsonObject();
-            root.addProperty("_comment", "Hidden/admin config for locked lucky blocks.");
-
-            JsonArray tiers = new JsonArray();
-            for (Map.Entry<Integer, LevelRange> entry : createDefaultTiers().entrySet()) {
-                JsonObject tier = new JsonObject();
-                tier.addProperty("tier", entry.getKey());
-                tier.addProperty("minLevel", entry.getValue().minLevel());
-                tier.addProperty("maxLevel", entry.getValue().maxLevel());
-                tiers.add(tier);
-            }
-            root.add("tiers", tiers);
+            JsonObject root = createDefaultConfigObject();
 
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
                 GSON.toJson(root, writer);
@@ -242,6 +253,28 @@ public final class LockedLuckyBlockTierConfig {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "[LockedLuckyBlockTierConfig] Failed to generate default config.", e);
         }
+    }
+
+    private static JsonObject createDefaultConfigObject() {
+        JsonObject root = LuckyBlockConfigManager.loadBundledObject("luckyblockcobblemon/default_configs/tiers.json");
+        if (root != null) {
+            return root;
+        }
+
+        root = new JsonObject();
+        root.addProperty("configVersion", LuckyBlockConfigManager.CONFIG_VERSION);
+        root.addProperty("_comment", "Locked-tier Lucky Block level ranges. Used by /luckyblockgive <target> <type> <tier> [amount].");
+
+        JsonArray tiers = new JsonArray();
+        for (Map.Entry<Integer, LevelRange> entry : createDefaultTiers().entrySet()) {
+            JsonObject tier = new JsonObject();
+            tier.addProperty("tier", entry.getKey());
+            tier.addProperty("minLevel", entry.getValue().minLevel());
+            tier.addProperty("maxLevel", entry.getValue().maxLevel());
+            tiers.add(tier);
+        }
+        root.add("tiers", tiers);
+        return root;
     }
 
     private static void loadDefaultsIntoMemory() {
