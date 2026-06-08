@@ -4,8 +4,16 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
-import com.google.gson.*;
-import net.fabricmc.loader.api.FabricLoader;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.crulim.luckblockcobblemon.config.LuckyBlockConfigManager;
+import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
+import net.minecraft.block.Block;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.world.ServerWorld;
@@ -13,779 +21,506 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.entity.ItemEntity;
 
-import java.io.*;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public class PocketLuckHandler {
-    private static boolean breakCreative = false;
-    public static void reloadConfig() {
-        POOLS.clear();
-        weightedLevels.clear();
-        loadConfig();
-        System.out.println("[PocketLuckHandler] Configuração recarregada com sucesso.");
-    }
-
-    private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .disableHtmlEscaping()
-            .create();
-    private static final Map<String, List<JsonObject>> POOLS = new HashMap<>();
-    private static final List<LevelRangeWeight> weightedLevels = new ArrayList<>();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Random random = Random.create();
-    private static final float shinyChancePercent = 5.0f;
-    private static final int minLevel = 5;
-    private static final int maxLevel = 15;
-    private static int defaultMinLevel = 5;
-    private static int defaultMaxLevel = 15;
+
+    private static final Set<String> EXPECTED_TYPES = Set.of(
+            "fire", "water", "grass", "ground", "fly", "fairy", "eletric", "steel"
+    );
+
+    private static final Map<String, JsonObject> POOL_CONFIGS = new HashMap<>();
+    private static final Map<String, List<JsonObject>> POOLS = new HashMap<>();
+    private static boolean breakCreative = false;
 
     public static void loadConfig() {
-        File configDir = new File(FabricLoader.getInstance().getGameDir().toFile(), "config/luckblockpocket");
+        POOL_CONFIGS.clear();
+        POOLS.clear();
+        breakCreative = LuckyBlockSettingsConfig.isThemedLuckyBlockBreakCreativeAllowed();
 
-        String[] expectedFiles = {
-                "luck_block_pocket_fire",
-                "luck_block_pocket_water",
-                "luck_block_pocket_grass",
-                "luck_block_pocket_ground",
-                "luck_block_pocket_fly",
-                "luck_block_pocket_fairy",
-                "luck_block_pocket_eletric",
-                "luck_block_pocket_steel"
-        };
-
-        for (String file : expectedFiles) {
-            POOLS.computeIfAbsent(file, PocketLuckHandler::loadOrCreate);
+        for (String type : EXPECTED_TYPES) {
+            JsonObject root = loadOrCreateRoot(type);
+            POOL_CONFIGS.put(type, root);
+            POOLS.put(type, readValidPool(root));
         }
 
-
-        File levelConfigFile = new File(configDir, "lvlconfig_types.json");
-        if (levelConfigFile.exists()) {
-            try (Reader reader = new InputStreamReader(new FileInputStream(levelConfigFile), StandardCharsets.UTF_8)) {
-                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-
-
-                if (json.has("breakCreative")) {
-                    breakCreative = json.get("breakCreative").getAsBoolean();
-                    System.out.println("[PocketLuckHandler] breakCreative carregado do lvlconfig_types.json: " + breakCreative);
-                }
-
-
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-
-        File configFile = new File(configDir, "level_config.json");
-        if (configFile.exists()) {
-            try (Reader reader = new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8)) {
-                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-                if (json.has("levelWeighting")) {
-                    JsonArray levelArray = json.getAsJsonArray("levelWeighting");
-                    weightedLevels.clear();
-                    for (JsonElement el : levelArray) {
-                        JsonObject obj = el.getAsJsonObject();
-                        int min = obj.get("min").getAsInt();
-                        int max = obj.get("max").getAsInt();
-                        float chance = obj.get("chance").getAsFloat();
-                        weightedLevels.add(new LevelRangeWeight(min, max, chance));
-                    }
-                    defaultMinLevel = -1;
-                    defaultMaxLevel = -1;
-                    System.out.println("[PocketLuckHandler] LevelWeighting carregado com sucesso.");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        System.out.println("[PocketLuckHandler] Configuração inicial carregada.");
+        System.out.println("[PocketLuckHandler] Loaded themed pools from config/luckyblockcobblemon/pools/themed/.");
     }
 
+    public static void reloadConfig() {
+        loadConfig();
+        System.out.println("[PocketLuckHandler] Config reloaded successfully.");
+    }
 
     public static boolean isBreakCreativeAllowed() {
         return breakCreative;
     }
 
-
     public static void trigger(ServerWorld world, BlockPos pos, Identifier blockId) {
-        String key = blockId.getPath();
-        List<JsonObject> pool = POOLS.computeIfAbsent(key, PocketLuckHandler::loadOrCreate);
+        String type = LuckyBlockConfigManager.toThemedType(blockId.getPath());
+        triggerFromPool(world, pos, type, -1, -1);
+    }
 
-        if (pool.isEmpty()) return;
+    public static void triggerLocked(ServerWorld world, BlockPos pos, String basePoolKey, int forcedMinLevel, int forcedMaxLevel) {
+        String type = LuckyBlockConfigManager.toThemedType(basePoolKey);
+        triggerFromPool(world, pos, type, forcedMinLevel, forcedMaxLevel);
+    }
+
+    private static void triggerFromPool(ServerWorld world, BlockPos pos, String type, int forcedMinLevel, int forcedMaxLevel) {
+        if (!EXPECTED_TYPES.contains(type)) {
+            System.out.println("[PocketLuckHandler] Unknown themed pool ignored: " + type);
+            return;
+        }
+
+        List<JsonObject> pool = POOLS.getOrDefault(type, Collections.emptyList());
+        if (pool.isEmpty()) {
+            System.out.println("[PocketLuckHandler] Themed pool is empty: " + type);
+            return;
+        }
 
         JsonObject chosen = pick(pool);
-        if (chosen == null) return;
+        if (chosen == null) {
+            System.out.println("[PocketLuckHandler] No event selected for themed pool: " + type);
+            return;
+        }
 
-        String type = chosen.get("type").getAsString();
-        switch (type) {
-            case "item" -> dropItems(world, pos, chosen);
-            case "pokemon" -> spawnPokemon(world, pos, chosen, false);
-            default -> System.out.println("[PocketLuckHandler] Tipo desconhecido: " + type);
+        JsonObject eventToExecute = chosen.deepCopy();
+        if (forcedMinLevel > 0 && forcedMaxLevel > 0) {
+            applyLockedLevelRange(eventToExecute, forcedMinLevel, forcedMaxLevel);
+        }
+
+        String eventType = eventToExecute.get("type").getAsString();
+        switch (eventType) {
+            case "item" -> dropItems(world, pos, eventToExecute);
+            case "pokemon" -> spawnPokemon(world, pos, eventToExecute, type);
+            default -> System.out.println("[PocketLuckHandler] Unknown event type ignored: " + eventType);
         }
     }
 
-    private static class LevelRangeWeight {
-        int min;
-        int max;
-        float chance;
-
-        LevelRangeWeight(int min, int max, float chance) {
-            this.min = min;
-            this.max = max;
-            this.chance = chance;
-        }
+    private static JsonObject loadOrCreateRoot(String type) {
+        return LuckyBlockConfigManager.loadPoolObjectWithLegacyMigration(
+                LuckyBlockConfigManager.themedPoolFile(type),
+                LuckyBlockConfigManager.legacyThemedPoolFile(type),
+                () -> createDefaultPool(type)
+        );
     }
 
+    private static List<JsonObject> readValidPool(JsonObject root) {
+        JsonArray events = LuckyBlockConfigManager.getEvents(root);
+        List<JsonObject> pool = new ArrayList<>();
 
-    private static List<JsonObject> loadOrCreate(String key) {
-        File configDir = new File(FabricLoader.getInstance().getGameDir().toFile(), "config/luckblockpocket");
-        File file = new File(configDir, key + ".json");
-        if (!file.exists()) createDefault(file, key);
-
-        try (Reader reader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
-            JsonArray array = JsonParser.parseReader(reader).getAsJsonArray();
-            List<JsonObject> pool = new ArrayList<>();
-            for (JsonElement e : array) {
-                if (e.isJsonObject()) pool.add(e.getAsJsonObject());
+        for (JsonElement element : events) {
+            if (element == null || !element.isJsonObject()) {
+                continue;
             }
-            return pool;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-    }
 
-    private static JsonObject createLevelWeighting(int min, int max, double chance) {
-        JsonObject obj = new JsonObject();
-        obj.addProperty("min", min);
-        obj.addProperty("max", max);
-        obj.addProperty("chance", chance);
-        return obj;
-    }
-
-    private static int getTimeBasedLevel(ServerWorld world, String type) {
-        long rawDays = world.getTimeOfDay() / 24000L;
-        long days = rawDays + 20; // simula o jogo já no dia 20
-
-        File configFile = new File("config/luckblockpocket/level_config.json");
-        if (!configFile.exists()) return -1;
-
-        try (Reader reader = new FileReader(configFile)) {
-            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-            String key = "timeLeveling_" + type;
-            if (!json.has(key)) return -1;
-
-            JsonArray timeLeveling = json.getAsJsonArray(key);
-            for (JsonElement el : timeLeveling) {
-                JsonObject obj = el.getAsJsonObject();
-                long min = obj.get("minDays").getAsLong();
-                long max = obj.get("maxDays").getAsLong();
-
-                if (days >= min && days <= max) {
-                    JsonArray levels = obj.getAsJsonArray("levels");
-
-                    float total = 0;
-                    for (JsonElement lvl : levels) {
-                        total += lvl.getAsJsonObject().get("chance").getAsFloat();
-                    }
-
-                    float roll = random.nextFloat() * total;
-                    float cumulative = 0;
-
-                    for (JsonElement lvl : levels) {
-                        JsonObject objLvl = lvl.getAsJsonObject();
-                        cumulative += objLvl.get("chance").getAsFloat();
-                        if (roll <= cumulative) {
-                            int minLevel = objLvl.get("min").getAsInt();
-                            int maxLevel = objLvl.get("max").getAsInt();
-                            return random.nextBetween(minLevel, maxLevel + 1);
-                        }
-                    }
-                }
+            JsonObject event = element.getAsJsonObject();
+            if (isValidEvent(event)) {
+                pool.add(event);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
-        return -1;
+        return pool;
     }
 
-    private static int getEffectiveLevel(ServerWorld world, JsonObject data, String type) {
-
-        if (data.has("minLevel") && data.has("maxLevel")) {
-            return random.nextBetween(data.get("minLevel").getAsInt(), data.get("maxLevel").getAsInt() + 1);
+    private static boolean isValidEvent(JsonObject event) {
+        if (event == null || !event.has("type")) {
+            return false;
         }
 
-
-        int timeLevel = getTimeBasedLevel(world, type);
-        if (timeLevel != -1) return timeLevel;
-
-
-        List<LevelRangeWeight> typeWeights = getLevelWeightingByType(type);
-        if (!typeWeights.isEmpty()) {
-            return getWeightedRandomLevel(typeWeights);
+        float chance = event.has("chance") ? event.get("chance").getAsFloat() : 1.0F;
+        if (chance <= 0F) {
+            return false;
         }
 
-        // fallback padrão
-        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
+        String type = event.get("type").getAsString();
+        return switch (type) {
+            case "item" -> event.has("items") && event.get("items").isJsonArray() && !event.getAsJsonArray("items").isEmpty();
+            case "pokemon" -> getPokemonArray(event) != null && !getPokemonArray(event).isEmpty();
+            default -> false;
+        };
     }
 
-    private static JsonObject createLevelRange(int min, int max, float chance) {
-        JsonObject obj = new JsonObject();
-        obj.addProperty("min", min);
-        obj.addProperty("max", max);
-        obj.addProperty("chance", chance);
-        return obj;
-    }
-
-    private static JsonObject createLevelRange(int min, int max, int chance) {
-        return createLevelRange(min, max, (float) chance);
-    }
-
-    private static List<LevelRangeWeight> getLevelWeightingByType(String type) {
-        File configFile = new File("config/luckblockpocket/level_config.json");
-        if (!configFile.exists()) return Collections.emptyList();
-
-        try (Reader reader = new FileReader(configFile)) {
-            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-            String key = "levelWeighting_" + type;
-            if (!json.has(key)) return Collections.emptyList();
-
-            JsonArray arr = json.getAsJsonArray(key);
-            List<LevelRangeWeight> ranges = new ArrayList<>();
-            for (JsonElement el : arr) {
-                JsonObject obj = el.getAsJsonObject();
-                ranges.add(new LevelRangeWeight(
-                        obj.get("min").getAsInt(),
-                        obj.get("max").getAsInt(),
-                        obj.get("chance").getAsFloat()
-                ));
-            }
-            return ranges;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-    }
-
-
-    private static int getWeightedRandomLevel(List<LevelRangeWeight> weights) {
+    private static JsonObject pick(List<JsonObject> pool) {
         float total = 0F;
-        for (LevelRangeWeight range : weights) {
-            total += range.chance;
+        for (JsonObject event : pool) {
+            float chance = event.has("chance") ? event.get("chance").getAsFloat() : 1.0F;
+            if (chance > 0F) {
+                total += chance;
+            }
+        }
+
+        if (total <= 0F) {
+            return null;
         }
 
         float roll = random.nextFloat() * total;
         float cumulative = 0F;
 
-        for (LevelRangeWeight range : weights) {
-            cumulative += range.chance;
+        for (JsonObject event : pool) {
+            float chance = event.has("chance") ? event.get("chance").getAsFloat() : 1.0F;
+            if (chance <= 0F) {
+                continue;
+            }
+            cumulative += chance;
             if (roll < cumulative) {
-                return random.nextBetween(range.min, range.max + 1);
+                return event;
             }
-        }
-
-        return random.nextBetween(defaultMinLevel, defaultMaxLevel + 1);
-    }
-
-
-    private static void createDefault(File file, String key) {
-        try {
-            file.getParentFile().mkdirs();
-
-            JsonArray array = new JsonArray();
-
-
-            Map<String, List<String>> pokemonMap = Map.of(
-                    "water_ice", List.of("squirtle", "wartortle", "blastoise",
-                            "psyduck", "golduck",
-                            "poliwag", "poliwhirl", "poliwrath",
-                            "tentacool", "tentacruel",
-                            "slowpoke", "slowbro",
-                            "seel", "dewgong",
-                            "shellder", "cloyster",
-                            "krabby", "kingler",
-                            "horsea", "seadra", "kingdra",
-                            "goldeen", "seaking",
-                            "staryu", "starmie",
-                            "magikarp", "gyarados",
-                            "lapras",
-                            "vaporeon",
-                            "totodile", "croconaw", "feraligatr",
-                            "chinchou", "lanturn",
-                            "marill", "azumarill",
-                            "wooper", "quagsire",
-                            "corsola",
-                            "remoraid", "octillery",
-                            "mantine", "mantyke",
-                            "mudkip", "marshtomp", "swampert",
-                            "lotad", "lombre", "ludicolo",
-                            "wingull", "pelipper",
-                            "carvanha", "sharpedo",
-                            "wailmer", "wailord",
-                            "barboach", "whiscash",
-                            "corphish", "crawdaunt",
-                            "feebas", "milotic",
-                            "spheal", "sealeo", "walrein",
-                            "clamperl", "huntail", "gorebyss",
-                            "relicanth",
-                            "luvdisc",
-                            "piplup", "prinplup", "empoleon",
-                            "buizel", "floatzel",
-                            "shellos", "gastrodon",
-                            "finneon", "lumineon",
-                            "palkia",
-                            "phione", "manaphy",
-                            "oshawott", "dewott", "samurott",
-                            "panpour", "simipour",
-                            "tympole", "palpitoad", "seismitoad",
-                            "basculin",
-                            "tirtouga", "carracosta",
-                            "ducklett", "swanna",
-                            "frillish", "jellicent",
-                            "alomomola",
-                            "keldeo",
-                            "froakie", "frogadier", "greninja",
-                            "clauncher", "clawitzer",
-                            "popplio", "brionne", "primarina",
-                            "wishiwashi",
-                            "dewpider", "araquanid",
-                            "bruxish",
-                            "sobble", "drizzile", "inteleon",
-                            "arrokuda", "barraskewda",
-                            "cramorant",
-                            "chewtle", "drednaw",
-                            "cufant", "copperajah",
-                            "arctovish", "dracovish",
-                            "eiscue",
-                            "kubfu", "urshifu",
-                            "basculegion",
-                            "quaxly", "quaxwell", "quaquaval", "dewgong", "cloyster", "jynx", "lapras", "articuno",
-                            "sneasel", "swinub", "piloswine", "delibird", "smoochum",
-                            "snorunt", "glalie", "spheal", "sealeo", "walrein",
-                            "regice", "glaceon", "mamoswine", "froslass", "vanillite",
-                            "vanillish", "vanilluxe", "cubchoo", "beartic", "cryogonal",
-                            "kyurem", "amaura", "aurorus", "bergmite", "avalugg",
-                            "crabominable", "eiscue", "arctozolt", "arctovish", "mrrime",
-                            "glastrier", "cetoddle", "cetitan", "chien_pao"),
-                    "fire", List.of("charmander", "charmeleon", "charizard",
-                            "vulpix", "ninetales",
-                            "growlithe", "arcanine",
-                            "ponyta", "rapidash",
-                            "magmar", "flareon",
-                            "cyndaquil", "quilava", "typhlosion",
-                            "slugma", "magcargo",
-                            "houndour", "houndoom",
-                            "magby", "entei",
-                            "torchic", "combusken", "blaziken",
-                            "numel", "camerupt",
-                            "torkoal", "solrock",
-                            "chimchar", "monferno", "infernape",
-                            "magmortar",
-                            "rotom_heat",
-                            "victini",
-                            "tepig", "pignite", "emboar",
-                            "pansear", "simisear",
-                            "darumaka", "darmanitan",
-                            "litwick", "lampent", "chandelure",
-                            "heatmor",
-                            "larvesta", "volcarona",
-                            "fennekin", "braixen", "delphox",
-                            "litleo", "pyroar",
-                            "volcanion",
-                            "litten", "torracat", "incineroar",
-                            "oricoriobaile",
-                            "salandit", "salazzle",
-                            "turtonator",
-                            "scorbunny", "raboot", "cinderace",
-                            "carkol", "coalossal",
-                            "centiskorch", "sizzlipede",
-                            "charcadet", "armarouge", "ceruledge",
-                            "fuecoco", "crocalor", "skeledirge",
-                            "chi_yu"),
-                    "grass_bug", List.of("bulbasaur", "ivysaur", "venusaur", "oddish", "gloom", "vileplume", "paras", "parasect",
-                            "bellsprout", "weepinbell", "victreebel", "exeggcute", "exeggutor", "tangela", "chikorita",
-                            "bayleef", "meganium", "bellossom", "hoppip", "skiploom", "jumpluff", "sunkern", "sunflora",
-                            "celebi", "treecko", "grovyle", "sceptile", "lotad", "lombre", "ludicolo", "seedot", "nuzleaf",
-                            "shiftry", "shroomish", "breloom", "roselia", "cacnea", "cacturne", "lileep", "cradily",
-                            "tropius", "turtwig", "grotle", "torterra", "budew", "roserade", "snover", "abomasnow",
-                            "leafeon", "shaymin", "snivy", "servine", "serperior", "pansage", "simisage", "sewaddle",
-                            "swadloon", "leavanny", "petilil", "lilligant", "maractus", "foongus", "amoonguss", "chespin",
-                            "quilladin", "chesnaught", "skiddo", "gogoat", "phantump", "trevenant", "pumpkaboo",
-                            "gourgeist", "rowlet", "dartrix", "decidueye", "bounsweet", "steenee", "tsareena", "morelull",
-                            "shiinotic", "dhelmise", "grookey", "thwackey", "rillaboom", "applin", "flapple", "appletun",
-                            "zarude", "sprigatito", "floragato", "meowscarada", "toedscool", "toedscruel", "bramblin",
-                            "brambleghast", "wo_chien", "caterpie", "metapod", "butterfree", "weedle", "kakuna", "beedrill",
-                            "venonat", "venomoth", "scyther", "pinsir", "ledyba", "ledian", "spinarak", "ariados", "yanma",
-                            "pineco", "forretress", "heracross", "wurmple", "silcoon", "beautifly", "cascoon", "dustox",
-                            "surskit", "masquerain", "nincada", "ninjask", "shedinja", "volbeat", "illumise", "anorith",
-                            "armaldo", "kricketot", "kricketune", "burmy", "wormadam", "mothim", "combee", "vespiquen",
-                            "skorupi", "yanmega", "venipede", "whirlipede", "scolipede", "dwebble", "crustle", "karrablast",
-                            "escavalier", "joltik", "galvantula", "shelmet", "accelgor", "durant", "larvesta", "volcarona",
-                            "scatterbug", "spewpa", "vivillon", "grubbin", "charjabug", "vikavolt", "cutiefly", "ribombee",
-                            "blipbug", "dottler", "orbeetle", "snom", "frosmoth", "lokix", "nymble", "tarountula", "spidops"),
-                    "ground_fighting", List.of("sandshrew", "sandslash", "diglett", "dugtrio", "geodude", "graveler", "golem", "onix",
-                            "cubone", "marowak", "rhyhorn", "rhydon", "wooper", "quagsire", "gligar", "swinub",
-                            "piloswine", "phanpy", "donphan", "larvitar", "pupitar", "flygon", "barboach", "whiscash",
-                            "baltoy", "claydol", "gible", "gabite", "garchomp", "hippopotas", "hippowdon", "mamoswine",
-                            "gliscor", "rhyperior", "gastrodon", "golett", "golurk", "landorus", "sandile", "krokorok",
-                            "krookodile", "stunfisk", "palpitoad", "seismitoad", "excadrill", "drilbur", "mudbray", "mudsdale",
-                            "silicobra", "sandaconda", "runerigus", "ursaluna", "toedscool", "toedscruel", "great_tusk",
-                            "irontreads", "ting_lu", "clodsire",
-                            "mankey", "primeape", "machop", "machoke", "machamp", "hitmonlee", "hitmonchan", "poliwrath",
-                            "heracross", "tyrogue", "hitmontop", "combusken", "blaziken", "breloom", "makuhita", "hariyama",
-                            "meditite", "medicham", "monferno", "infernape", "riolu", "lucario", "gallade", "pignite",
-                            "emboar", "throh", "sawk", "scraggy", "scrafty", "mienshao", "cobalion", "terrakion", "virizion",
-                            "keldeo", "chesnaught", "hawlucha", "crabrawler", "crabominable", "passimian", "bewear",
-                            "sirfetchd", "zamazenta", "kubfu", "urshifu", "zamazentacrowned", "iron_hands", "ironvaliant",
-                            "annihilape", "quaquaval", "koraidon"),
-                    "fly_dragon", List.of("pidgey", "pidgeotto", "pidgeot", "spearow", "fearow", "zubat", "golbat", "farfetchd", "doduo", "dodrio",
-                            "scyther", "gyarados", "aerodactyl", "articuno", "zapdos", "moltres", "dragonite", "hoothoot", "noctowl",
-                            "crobat", "natu", "xatu", "murkrow", "gligar", "delibird", "skarmory", "lugia", "hooh", "tropius", "salamence",
-                            "altaria", "rayquaza", "staraptor", "drifblim", "honchkrow", "togekiss", "yanmega", "gliscor", "braviary",
-                            "mandibuzz", "noivern", "yveltal", "corviknight", "talonflame", "rookidee", "corvisquire", "noibat", "flapple",
-                            "dragapult", "kilowattrel", "bombirdier", "ironjugulis", "roaringmoon"),
-                    "fairy_ghost_poison", List.of("clefairy", "clefable", "jigglypuff", "wigglytuff", "mrmime", "snubbull", "granbull", "ralts",
-                            "kirlia", "gardevoir", "azurill", "mawile", "aromatisse", "slurpuff", "florges", "sylveon", "mimikyu",
-                            "tapukoko", "tapulele", "tapubulu", "tapufini", "diancie", "primarina", "hatterene", "grimmsnarl", "flutter_mane",
-                            "gastly", "haunter", "gengar", "misdreavus", "mismagius", "shedinja", "sableye", "dusclops", "dusknoir", "froslass",
-                            "yamask", "cofagrigus", "golurk", "phantump", "trevenant", "sandygast", "palossand", "dhelmise", "decidueye",
-                            "runerigus", "spectrier", "basculegion", "anihilape", "greavard", "houndstone",
-                            "ekans", "arbok", "nidoranf", "nidorina", "nidoqueen", "nidoranm", "nidorino", "nidoking",
-                            "zubat", "golbat", "venonat", "venomoth", "grimer", "muk", "koffing", "weezing", "gastly", "haunter", "gengar",
-                            "crobat", "qwilfish", "dustox", "roselia", "skuntank", "toxicroak", "trubbish", "garbodor", "nihilego",
-                            "toxapex", "salandit", "salazzle", "poisonvaliant", "glimmora"),
-                    "eletric_dark", List.of("pikachu", "raichu", "magnemite", "magneton", "voltorb", "electrode", "electabuzz", "jolteon", "zapdos",
-                            "pichu", "mareep", "flaaffy", "ampharos", "elekid", "raikou", "plusle", "minun", "electrike", "manectric",
-                            "shinx", "luxio", "luxray", "rotom", "zekrom", "stunfisk", "helioptile", "heliolisk", "xurkitree", "tapukoko",
-                            "yamper", "boltund", "toxtricity", "pincurchin", "morpeko", "bellibolt", "ironhands", "raging_bolt",
-                            "umbreon", "murkrow", "houndour", "houndoom", "tyranitar", "sableye", "carvanha", "sharpedo", "cacturne",
-                            "absol", "crawdaunt", "honchkrow", "spiritomb", "drapion", "weavile", "darkrai", "bisharp", "pawniard",
-                            "zorua", "zoroark", "yveltal", "inkay", "malamar", "greninja", "hoopa", "incineroar", "grimmsnarl",
-                            "obstagoon", "morpeko", "urshifu", "chienpao", "kingambit"),
-                    "steel_rock", List.of("magnemite", "magneton", "forretress", "steelix", "scizor", "skarmory", "mawile", "aron", "lairon", "aggron",
-                            "beldum", "metang", "metagross", "registeel", "empoleon", "shieldon", "bastiodon", "bronzor", "bronzong",
-                            "lucario", "magnezone", "probopass", "excadrill", "ferroseed", "ferrothorn", "durant", "cobalion", "honedge",
-                            "doublade", "aegislash", "klefki", "togedemaru", "solgaleo", "celesteela", "melmetal", "cufant", "copperajah",
-                            "perrserker", "zacian", "zamazenta", "irontreads", "kingambit", "orthworm", "garganacl",
-                            "geodude", "graveler", "golem", "onix", "kabuto", "kabutops", "omanyte", "omastar",
-                            "aerodactyl", "shuckle", "corsola", "larvitar", "pupitar", "tyranitar", "nosepass", "lunatone",
-                            "solrock", "relicanth", "regirock", "cranidos", "rampardos", "shieldon", "bastiodon",
-                            "roggenrola", "boldore", "gigalith", "dwebble", "crustle", "binacle", "barbaracle",
-                            "carbink", "lycanroc", "stakataka", "diancie", "nacli", "naclstack", "garganacl")
-            );
-
-            Map<String, List<String>> itemMap = Map.of(
-                    "water_ice", List.of("cobblemon:mystic_water",
-                            "cobblemon:water_stone",
-                            "cobblemon:icy_rock",
-                            "cobblemon:never_melt_ice",
-                            "cobblemon:water_gem","cobblemon:ice_gem"),
-                    "fire", List.of("cobblemon:fire_stone",
-                            "cobblemon:heat_rock",
-                            "cobblemon:magmarizer",
-                            "cobblemon:rawst_berry",
-                            "cobblemon:fire_gem"),
-                    "grass_bug", List.of("cobblemon:miracle_seed",
-                            "cobblemon:leaf_stone",
-                            "cobblemon:big_root",
-                            "cobblemon:silver_powder",
-                            "cobblemon:coba_berry",
-                            "cobblemon:grass_gem","cobblemon:bug_gem"),
-                    "ground_fighting", List.of("cobblemon:soft_sand",
-                            "cobblemon:smooth_rock",
-                            "cobblemon:focus_band",
-                            "cobblemon:black_belt",
-                            "cobblemon:muscle_band",
-                            "cobblemon:ground_gem","cobblemon:fighting_gem"),
-                    "fly_dragon", List.of("cobblemon:sharp_beak",
-                            "cobblemon:air_balloon",
-                            "cobblemon:dragon_fang",
-                            "cobblemon:float_stone",
-                            "minecraft:ender_pearl",
-                            "cobblemon:flying_gem","cobblemon:dragon_gem"),
-                    "fairy_ghost_poison", List.of("cobblemon:fairy_feather",
-                            "cobblemon:spell_tag",
-                            "cobblemon:poison_barb",
-                            "cobblemon:black_sludge","cobblemon:fairy_gem","cobblemon:ghost_gem","cobblemon:poison_gem"),
-                    "eletric_dark", List.of(  "cobblemon:magnet",
-                            "cobblemon:cell_battery",
-                            "cobblemon:black_glasses",
-                            "cobblemon:light_ball",
-                            "minecraft:redstone",
-                            "cobblemon:razor_claw","cobblemon:electric_gem","cobblemon:dark_gem"),
-                    "steel_rock", List.of("cobblemon:metal_coat",
-                            "cobblemon:iron_ball",
-                            "cobblemon:hard_stone",
-                            "cobblemon:smooth_rock",
-                            "cobblemon:rocky_helmet",
-                            "cobblemon:heavy_duty_boots",
-                            "cobblemon:rock_gem","cobblemon:steel_gem")
-            );
-
-            Map<String, String> keyTypeMap = Map.ofEntries(
-                    Map.entry("luck_block_pocket_water", "water_ice"),
-                    Map.entry("luck_block_pocket_ice", "water_ice"),
-                    Map.entry("luck_block_pocket_fire", "fire"),
-                    Map.entry("luck_block_pocket_grass", "grass_bug"),
-                    Map.entry("luck_block_pocket_bug", "grass_bug"),
-                    Map.entry("luck_block_pocket_ground", "ground_fighting"),
-                    Map.entry("luck_block_pocket_fighting", "ground_fighting"),
-                    Map.entry("luck_block_pocket_fly", "fly_dragon"),
-                    Map.entry("luck_block_pocket_dragon", "fly_dragon"),
-                    Map.entry("luck_block_pocket_fairy", "fairy_ghost_poison"),
-                    Map.entry("luck_block_pocket_ghost", "fairy_ghost_poison"),
-                    Map.entry("luck_block_pocket_poison", "fairy_ghost_poison"),
-                    Map.entry("luck_block_pocket_eletric", "eletric_dark"),
-                    Map.entry("luck_block_pocket_dark", "eletric_dark"),
-                    Map.entry("luck_block_pocket_steel", "steel_rock"),
-                    Map.entry("luck_block_pocket_rock", "steel_rock")
-            );
-
-            String resolvedType = keyTypeMap.entrySet().stream()
-                    .filter(e -> key.contains(e.getKey()))
-                    .map(Map.Entry::getValue)
-                    .findFirst()
-                    .orElse(null);
-
-            if (resolvedType != null) {
-                JsonObject pokemonDrop = new JsonObject();
-                pokemonDrop.addProperty("type", "pokemon");
-                pokemonDrop.add("pokemons", GSON.toJsonTree(pokemonMap.get(resolvedType)));
-                pokemonDrop.addProperty("shinyChance", 10);
-                pokemonDrop.addProperty("chance", 85);
-
-                JsonObject itemDrop = new JsonObject();
-                itemDrop.addProperty("type", "item");
-                itemDrop.add("items", GSON.toJsonTree(itemMap.getOrDefault(resolvedType, List.of("minecraft:stone"))));
-                itemDrop.addProperty("min", 1);
-                itemDrop.addProperty("max", 1);
-                itemDrop.addProperty("chance", 15);
-
-                array.add(pokemonDrop);
-                array.add(itemDrop);
-            }
-
-            if (array.isEmpty()) {
-                JsonObject fallback = new JsonObject();
-                fallback.addProperty("type", "item");
-                fallback.add("items", GSON.toJsonTree(List.of("minecraft:diamond")));
-                fallback.addProperty("min", 1);
-                fallback.addProperty("max", 1);
-                fallback.addProperty("chance", 100);
-                array.add(fallback);
-            }
-
-            try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-                GSON.toJson(array, writer);
-            }
-
-            System.out.println("[PocketLuckHandler] Arquivo default criado: " + key);
-
-
-            if (resolvedType != null) {
-                File levelFile = new File("config/luckblockpocket/lvlconfig_types.json");
-                JsonObject finalJson;
-
-                if (levelFile.exists()) {
-                    finalJson = GSON.fromJson(new FileReader(levelFile), JsonObject.class);
-                } else {
-                    finalJson = new JsonObject();
-                    finalJson.add("minLevel", new JsonPrimitive(1));
-                    finalJson.add("maxLevel", new JsonPrimitive(100));
-
-                    JsonArray note = new JsonArray();
-                    note.add("INFO: 'breakCreative' controls whether Lucky Blocks can be activated in Creative mode.");
-                    note.add("If set to true, breaking a Lucky Block in Creative mode will trigger its event (recommended for testing only).");
-                    note.add("If set to false, Lucky Blocks can only be triggered in Survival/Adventure modes.");
-
-
-
-
-                    note.add("---------");
-                    note.add("There are 3 ways to define Pokémon levels for Lucky Blocks:");
-                    note.add("1 - minLevel / maxLevel → If present in the event, defines the exact level range.");
-                    note.add("   Example: minLevel: 10, maxLevel: 30");
-                    note.add("2 - timeLeveling → If no min/max, the level is chosen based on the Minecraft world's age in days.");
-                    note.add("   It uses configured level ranges for day periods (0–20, 21–50, etc.).");
-                    note.add("3 - levelWeighting → If neither of the above is used, the system applies default level chances per block type (like fire, water_ice).");
-                    note.add("Priority order: minLevel/maxLevel > timeLeveling > levelWeighting.");
-                    note.add("This file (lvlconfig_types.json) controls all those settings.");
-                    finalJson.add("_note", note);
-                    finalJson.addProperty("breakCreative", false);
-
-
-                    JsonArray timeLeveling = new JsonArray();
-
-                    JsonObject days0to20 = new JsonObject();
-                    days0to20.addProperty("minDays", 0);
-                    days0to20.addProperty("maxDays", 25);
-                    JsonArray levels0to20 = new JsonArray();
-                    levels0to20.add(createLevelRange(1, 12, 90.0f));
-                    levels0to20.add(createLevelRange(13, 16, 9.0f));
-                    levels0to20.add(createLevelRange(17, 20, 1.0f));
-                    days0to20.add("levels", levels0to20);
-                    timeLeveling.add(days0to20);
-
-                    JsonObject days21to50 = new JsonObject();
-                    days21to50.addProperty("minDays", 26);
-                    days21to50.addProperty("maxDays", 50);
-                    JsonArray levels21to50 = new JsonArray();
-                    levels21to50.add(createLevelRange(1, 35, 60.0f));
-                    levels21to50.add(createLevelRange(36, 45, 30.0f));
-                    levels21to50.add(createLevelRange(46, 55, 10.0f));
-                    days21to50.add("levels", levels21to50);
-                    timeLeveling.add(days21to50);
-
-                    JsonObject days51to100 = new JsonObject();
-                    days51to100.addProperty("minDays", 51);
-                    days51to100.addProperty("maxDays", 100);
-                    JsonArray levels51to100 = new JsonArray();
-                    levels51to100.add(createLevelRange(30, 60, 50.0f));
-                    levels51to100.add(createLevelRange(61, 65, 35.0f));
-                    levels51to100.add(createLevelRange(66, 70, 15.0f));
-                    days51to100.add("levels", levels51to100);
-                    timeLeveling.add(days51to100);
-
-                    JsonObject days101plus = new JsonObject();
-                    days101plus.addProperty("minDays", 101);
-                    days101plus.addProperty("maxDays", 99999);
-                    JsonArray levels101plus = new JsonArray();
-                    levels101plus.add(createLevelRange(40, 80, 60.0f));
-                    levels101plus.add(createLevelRange(81, 85, 30.0f));
-                    levels101plus.add(createLevelRange(86, 90, 10.0f));
-                    days101plus.add("levels", levels101plus);
-                    timeLeveling.add(days101plus);
-
-                    finalJson.add("timeLeveling", timeLeveling);
-                }
-
-
-                String lwKey = "levelWeighting_" + resolvedType;
-                if (!finalJson.has(lwKey)) {
-                    JsonArray weighting = new JsonArray();
-                    weighting.add(createLevelRange(85, 100, 5));
-                    weighting.add(createLevelRange(60, 84, 15));
-                    weighting.add(createLevelRange(30, 59, 30));
-                    weighting.add(createLevelRange(1, 29, 50));
-                    finalJson.add(lwKey, weighting);
-
-                    try (Writer writer = new FileWriter(levelFile)) {
-                        GSON.toJson(finalJson, writer);
-                        System.out.println("[PocketLuckHandler] lvlconfig_types.json atualizado com " + lwKey);
-                    }
-                }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-
-
-    private static JsonObject pick(List<JsonObject> pool) {
-        double total = 0;
-        for (JsonObject obj : pool) {
-            total += obj.get("chance").getAsDouble();
-        }
-
-        double roll = random.nextDouble() * total;
-        double cumulative = 0;
-
-        for (JsonObject obj : pool) {
-            cumulative += obj.get("chance").getAsDouble();
-            if (roll <= cumulative) return obj;
         }
 
         return null;
     }
 
-    private static void dropItems(ServerWorld world, BlockPos pos, JsonObject data) {
-        if (!data.has("items")) return;
+    private static void applyLockedLevelRange(JsonObject event, int minLevel, int maxLevel) {
+        if (event != null && event.has("type") && "pokemon".equals(event.get("type").getAsString())) {
+            event.addProperty("minLevel", minLevel);
+            event.addProperty("maxLevel", maxLevel);
+        }
+    }
 
-        JsonArray array = data.getAsJsonArray("items");
+    private static void dropItems(ServerWorld world, BlockPos pos, JsonObject data) {
+        JsonArray items = data.getAsJsonArray("items");
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+
+        String id = items.get(random.nextInt(items.size())).getAsString();
         int min = data.has("min") ? data.get("min").getAsInt() : 1;
         int max = data.has("max") ? data.get("max").getAsInt() : min;
-        int amount = random.nextBetween(min, max);
-
-        for (int i = 0; i < amount; i++) {
-            String itemId = array.get(random.nextInt(array.size())).getAsString();
-            Identifier id = Identifier.tryParse(itemId);
-            if (!Registries.ITEM.containsId(id)) {
-                System.out.println("[PocketLuckHandler] Item desconhecido: " + itemId);
-                continue;
-            }
-            ItemStack stack = new ItemStack(Registries.ITEM.get(id));
-            ItemEntity entity = new ItemEntity(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, stack);
-            world.spawnEntity(entity);
+        if (max < min) {
+            int temp = min;
+            min = max;
+            max = temp;
         }
-    }
 
-    private static String getTypeFromBlockName(BlockPos pos, ServerWorld world) {
-        String blockId = world.getBlockState(pos).getBlock().toString().toLowerCase();
-
-        if (blockId.contains("fire")) return "fire";
-        if (blockId.contains("water") || blockId.contains("ice")) return "water_ice";
-        if (blockId.contains("grass") || blockId.contains("bug")) return "grass_bug";
-        if (blockId.contains("ground") || blockId.contains("fighting")) return "ground_fighting";
-        if (blockId.contains("fly") || blockId.contains("dragon")) return "fly_dragon";
-        if (blockId.contains("fairy") || blockId.contains("ghost") || blockId.contains("poison")) return "fairy_ghost_poison";
-        if (blockId.contains("eletric") || blockId.contains("dark")) return "eletric_dark";
-        if (blockId.contains("steel") || blockId.contains("rock")) return "steel_rock";
-
-        return "default";
-    }
-
-    private static void spawnPokemon(ServerWorld world, BlockPos pos, JsonObject data, boolean forceShiny) {
-        if (!data.has("pokemons")) {
-            System.out.println("[PocketLuckHandler] Nenhuma lista de pokemons encontrada.");
+        Item item = Registries.ITEM.get(Identifier.of(id));
+        if (item == null || item == net.minecraft.item.Items.AIR) {
+            System.out.println("[PocketLuckHandler] Invalid item id: " + id);
             return;
         }
 
-        JsonArray pokemons = data.getAsJsonArray("pokemons");
-        if (pokemons.isEmpty()) return;
+        Block.dropStack(world, pos.up(), new ItemStack(item, randomLevelBetween(min, max)));
+    }
 
-        String speciesName = pokemons.get(random.nextInt(pokemons.size())).getAsString();
-        speciesName = normalizeSpeciesName(speciesName);
+    private static void spawnPokemon(ServerWorld world, BlockPos pos, JsonObject data, String themedType) {
+        JsonArray pokemons = getPokemonArray(data);
+        if (pokemons == null || pokemons.isEmpty()) {
+            return;
+        }
 
+        String speciesName = normalizeSpeciesName(pokemons.get(random.nextInt(pokemons.size())).getAsString());
         Species species = PokemonSpecies.INSTANCE.getByName(speciesName);
         if (species == null) {
-            System.out.println("[PocketLuckHandler] Pokémon inválido: " + speciesName);
+            System.out.println("[PocketLuckHandler] Species not found: " + speciesName);
             return;
         }
+
+        int level = getEffectiveLevel(world, themedType, data);
+        float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : 0.02F;
 
         Pokemon pokemon = new Pokemon();
         pokemon.setSpecies(species);
-
-        String typeKey = getTypeFromBlockName(pos, world);
-        int level = getEffectiveLevel(world, data, typeKey);
         pokemon.setLevel(level);
-
-        float shinyChance = data.has("shinyChance") ? data.get("shinyChance").getAsFloat() : shinyChancePercent;
-        boolean isShiny = forceShiny || (random.nextFloat() * 100F < shinyChance);
-        pokemon.setShiny(isShiny);
+        pokemon.setShiny(random.nextFloat() * 100F < shinyChance);
 
         Vec3d spawnPos = Vec3d.ofCenter(pos).add(0, 1, 0);
         PokemonEntity entity = pokemon.sendOut(world, spawnPos, null, e -> null);
-
         if (entity == null) {
-            System.out.println("[PocketLuckHandler] Falha ao spawnar Pokémon: " + speciesName);
-            return;
-        }
-
-        if (data.has("aggressive") && data.get("aggressive").getAsBoolean()) {
-            entity.setPersistent();
-            entity.setTarget(world.getClosestPlayer(spawnPos.x, spawnPos.y, spawnPos.z, 16, false));
+            System.out.println("[PocketLuckHandler] Failed to spawn Pokémon: " + speciesName);
         }
     }
 
-    private static String normalizeSpeciesName(String name) {
-        return name.toLowerCase().replace(" ", "_").replace("-", "_");
+    private static JsonArray getPokemonArray(JsonObject event) {
+        if (event.has("pokemons") && event.get("pokemons").isJsonArray()) {
+            return event.getAsJsonArray("pokemons");
+        }
+        if (event.has("pokemon") && event.get("pokemon").isJsonArray()) {
+            return event.getAsJsonArray("pokemon");
+        }
+        return null;
+    }
+
+    private static int getEffectiveLevel(ServerWorld world, String themedType, JsonObject event) {
+        if (event.has("level") && event.get("level").getAsInt() > 0) {
+            return event.get("level").getAsInt();
+        }
+
+        if (event.has("minLevel") && event.has("maxLevel")) {
+            int min = event.get("minLevel").getAsInt();
+            int max = event.get("maxLevel").getAsInt();
+            if (min > 0 && max > 0) {
+                return randomLevelBetween(min, max);
+            }
+        }
+
+        JsonObject root = POOL_CONFIGS.get(themedType);
+        int fromPoolConfig = getLevelFromPoolRoot(world, themedType, root);
+        if (fromPoolConfig > 0) {
+            return fromPoolConfig;
+        }
+
+        int fromLegacy = getLevelFromLegacyConfig(world, themedType);
+        if (fromLegacy > 0) {
+            return fromLegacy;
+        }
+
+        return randomLevelBetween(5, 15);
+    }
+
+    private static int getLevelFromPoolRoot(ServerWorld world, String themedType, JsonObject root) {
+        if (root == null) {
+            return -1;
+        }
+
+        if (root.has("levelRange") && root.get("levelRange").isJsonObject()) {
+            JsonObject range = root.getAsJsonObject("levelRange");
+            int min = range.has("min") ? range.get("min").getAsInt() : -1;
+            int max = range.has("max") ? range.get("max").getAsInt() : -1;
+            if (min > 0 && max > 0) {
+                return randomLevelBetween(min, max);
+            }
+        }
+
+        int time = getTimeBasedLevel(world, root.getAsJsonArray("timeLeveling"));
+        if (time > 0) {
+            return time;
+        }
+
+        if (root.has("levelWeighting") && root.get("levelWeighting").isJsonArray()) {
+            int weighted = getWeightedRandomLevel(root.getAsJsonArray("levelWeighting"));
+            if (weighted > 0) {
+                return weighted;
+            }
+        }
+
+        String typeKey = "levelWeighting_" + themedType;
+        if (root.has(typeKey) && root.get(typeKey).isJsonArray()) {
+            int weighted = getWeightedRandomLevel(root.getAsJsonArray(typeKey));
+            if (weighted > 0) {
+                return weighted;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int getLevelFromLegacyConfig(ServerWorld world, String themedType) {
+        int fromTypes = readLegacyTypeLevelConfig(world, themedType);
+        if (fromTypes > 0) {
+            return fromTypes;
+        }
+
+        if (!Files.exists(LuckyBlockConfigManager.legacyThemedLevelConfigFile())) {
+            return -1;
+        }
+
+        try (Reader reader = Files.newBufferedReader(LuckyBlockConfigManager.legacyThemedLevelConfigFile(), StandardCharsets.UTF_8)) {
+            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+            if (json.has("levelWeighting") && json.get("levelWeighting").isJsonArray()) {
+                return getWeightedRandomLevel(json.getAsJsonArray("levelWeighting"));
+            }
+        } catch (Exception e) {
+            System.out.println("[PocketLuckHandler] Failed to read legacy level_config.json: " + e.getMessage());
+        }
+
+        return -1;
+    }
+
+    private static int readLegacyTypeLevelConfig(ServerWorld world, String themedType) {
+        if (!Files.exists(LuckyBlockConfigManager.legacyThemedTypeLevelConfigFile())) {
+            return -1;
+        }
+
+        try (Reader reader = Files.newBufferedReader(LuckyBlockConfigManager.legacyThemedTypeLevelConfigFile(), StandardCharsets.UTF_8)) {
+            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+
+            if (json.has("minLevel") && json.has("maxLevel")) {
+                int min = json.get("minLevel").getAsInt();
+                int max = json.get("maxLevel").getAsInt();
+                if (min > 0 && max > 0) {
+                    return randomLevelBetween(min, max);
+                }
+            }
+
+            String timeKey = "timeLeveling_" + themedType;
+            if (json.has(timeKey) && json.get(timeKey).isJsonArray()) {
+                int time = getTimeBasedLevel(world, json.getAsJsonArray(timeKey));
+                if (time > 0) {
+                    return time;
+                }
+            }
+
+            String weightKey = "levelWeighting_" + themedType;
+            if (json.has(weightKey) && json.get(weightKey).isJsonArray()) {
+                return getWeightedRandomLevel(json.getAsJsonArray(weightKey));
+            }
+        } catch (Exception e) {
+            System.out.println("[PocketLuckHandler] Failed to read legacy lvlconfig_types.json: " + e.getMessage());
+        }
+
+        return -1;
+    }
+
+    private static int getTimeBasedLevel(ServerWorld world, JsonArray timeLeveling) {
+        if (timeLeveling == null || timeLeveling.isEmpty()) {
+            return -1;
+        }
+
+        long days = (world.getTimeOfDay() / 24000L) + 20;
+        for (JsonElement element : timeLeveling) {
+            if (element == null || !element.isJsonObject()) {
+                continue;
+            }
+            JsonObject obj = element.getAsJsonObject();
+            if (!obj.has("minDays") || !obj.has("maxDays") || !obj.has("levels")) {
+                continue;
+            }
+            long minDays = obj.get("minDays").getAsLong();
+            long maxDays = obj.get("maxDays").getAsLong();
+            if (days >= minDays && days <= maxDays && obj.get("levels").isJsonArray()) {
+                return getWeightedRandomLevel(obj.getAsJsonArray("levels"));
+            }
+        }
+        return -1;
+    }
+
+    private static int getWeightedRandomLevel(JsonArray weights) {
+        if (weights == null || weights.isEmpty()) {
+            return -1;
+        }
+
+        float total = 0F;
+        List<JsonObject> valid = new ArrayList<>();
+        for (JsonElement element : weights) {
+            if (element == null || !element.isJsonObject()) {
+                continue;
+            }
+            JsonObject obj = element.getAsJsonObject();
+            if (!obj.has("min") || !obj.has("max") || !obj.has("chance")) {
+                continue;
+            }
+            float chance = obj.get("chance").getAsFloat();
+            if (chance > 0F) {
+                total += chance;
+                valid.add(obj);
+            }
+        }
+
+        if (total <= 0F || valid.isEmpty()) {
+            return -1;
+        }
+
+        float roll = random.nextFloat() * total;
+        float cumulative = 0F;
+        for (JsonObject obj : valid) {
+            cumulative += obj.get("chance").getAsFloat();
+            if (roll < cumulative) {
+                return randomLevelBetween(obj.get("min").getAsInt(), obj.get("max").getAsInt());
+            }
+        }
+
+        return -1;
+    }
+
+    private static int randomLevelBetween(int min, int max) {
+        if (max < min) {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+        return min + random.nextInt(max - min + 1);
+    }
+
+    private static String normalizeSpeciesName(String input) {
+        if (input == null || input.isBlank()) {
+            return "";
+        }
+
+        return input
+                .toLowerCase(Locale.ROOT)
+                .replace(" ", "")
+                .replace("_", "")
+                .replace("♀", "f")
+                .replace("♂", "m")
+                .replaceAll("[^a-z0-9\\-]", "");
+    }
+
+    private static JsonObject createDefaultPool(String type) {
+        String normalizedType = LuckyBlockConfigManager.toThemedType(type);
+        JsonObject bundled = LuckyBlockConfigManager.loadBundledObject("luckyblockcobblemon/default_configs/pools/themed/" + normalizedType + ".json");
+        if (bundled != null) {
+            return bundled;
+        }
+
+        JsonObject root = new JsonObject();
+        root.addProperty("configVersion", LuckyBlockConfigManager.CONFIG_VERSION);
+        root.addProperty("_comment", "Emergency fallback themed Lucky Block pool for type: " + normalizedType + ". The bundled default config was not found.");
+
+        JsonArray events = new JsonArray();
+
+        JsonObject pokemon = new JsonObject();
+        pokemon.addProperty("type", "pokemon");
+        pokemon.addProperty("chance", 85F);
+        pokemon.addProperty("shinyChance", 10F);
+        JsonArray species = new JsonArray();
+        for (String name : defaultSpeciesByType().getOrDefault(normalizedType, List.of("eevee"))) {
+            species.add(name);
+        }
+        pokemon.add("pokemons", species);
+        events.add(pokemon);
+
+        JsonObject item = new JsonObject();
+        item.addProperty("type", "item");
+        item.addProperty("chance", 15F);
+        item.addProperty("min", 1);
+        item.addProperty("max", 1);
+        JsonArray items = new JsonArray();
+        for (String id : defaultItemsByType().getOrDefault(normalizedType, List.of("cobblemon:poke_ball"))) {
+            items.add(id);
+        }
+        item.add("items", items);
+        events.add(item);
+
+        root.add("events", events);
+        return root;
+    }
+
+    private static Map<String, List<String>> defaultSpeciesByType() {
+        Map<String, List<String>> map = new LinkedHashMap<>();
+        map.put("fire", List.of("charmander", "charmeleon", "charizard", "vulpix", "ninetales", "growlithe", "arcanine", "ponyta", "rapidash"));
+        map.put("water", List.of("squirtle", "wartortle", "blastoise", "psyduck", "golduck", "poliwag", "poliwhirl", "poliwrath", "tentacool", "tentacruel", "slowpoke", "slowbro", "seel", "dewgong", "shellder", "cloyster", "krabby", "kingler", "horsea", "seadra", "goldeen", "seaking", "staryu", "starmie", "magikarp", "gyarados", "lapras", "vaporeon"));
+        map.put("grass", List.of("bulbasaur", "ivysaur", "venusaur", "oddish", "gloom", "vileplume", "paras", "parasect", "bellsprout", "weepinbell", "victreebel", "exeggcute", "exeggutor", "tangela"));
+        map.put("ground", List.of("sandshrew", "sandslash", "diglett", "dugtrio", "geodude", "graveler", "golem", "onix", "cubone", "marowak", "rhyhorn", "rhydon"));
+        map.put("fly", List.of("charizard", "butterfree", "pidgey", "pidgeotto", "pidgeot", "spearow", "fearow", "zubat", "golbat", "farfetchd", "doduo", "dodrio", "scyther", "gyarados", "aerodactyl", "dragonite"));
+        map.put("steel", List.of("magnemite", "magneton"));
+        map.put("eletric", List.of("pikachu", "raichu", "magnemite", "magneton", "voltorb", "electrode", "electabuzz", "jolteon"));
+        map.put("fairy", List.of("clefairy", "clefable", "jigglypuff", "wigglytuff", "mrMime"));
+        return map;
+    }
+
+    private static Map<String, List<String>> defaultItemsByType() {
+        Map<String, List<String>> map = new LinkedHashMap<>();
+        map.put("fire", List.of("cobblemon:fire_stone", "cobblemon:charcoal"));
+        map.put("water", List.of("cobblemon:water_stone", "cobblemon:mystic_water"));
+        map.put("grass", List.of("cobblemon:leaf_stone", "cobblemon:miracle_seed"));
+        map.put("ground", List.of("cobblemon:soft_sand", "cobblemon:hard_stone"));
+        map.put("fly", List.of("cobblemon:sharp_beak", "cobblemon:ancient_feather_ball"));
+        map.put("steel", List.of("cobblemon:metal_coat", "cobblemon:iron_ball"));
+        map.put("eletric", List.of("cobblemon:thunder_stone", "cobblemon:magnet"));
+        map.put("fairy", List.of("cobblemon:moon_stone", "cobblemon:fairy_feather"));
+        return map;
     }
 }

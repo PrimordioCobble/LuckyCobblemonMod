@@ -1,10 +1,15 @@
 plugins {
     id 'fabric-loom' version '1.10-SNAPSHOT'
     id 'maven-publish'
-    id 'org.jetbrains.kotlin.jvm' version '2.0.21'
+    id 'org.jetbrains.kotlin.jvm' version '2.2.21'
     id "com.modrinth.minotaur" version "2.+"
 }
 
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0"
+    }
+}
 version = project.mod_version
 group = project.maven_group
 
@@ -32,7 +37,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modImplementation("com.cobblemon:fabric:${project.cobblemon_version}")
-    implementation "org.jetbrains.kotlin:kotlin-reflect:1.9.21"
+    implementation("com.cobblemon:fabric:1.7.0+1.21.1-SNAPSHOT:sources@jar")
+    implementation "org.jetbrains.kotlin:kotlin-reflect:2.2.21"
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 processResources {
@@ -53,12 +60,13 @@ java {
     targetCompatibility = JavaVersion.VERSION_21
 }
 
-// ✅ Correct placement for sourceSets
 sourceSets {
     main {
+        java {
+            srcDirs = ['src/main/java', 'src/client/java']
+        }
         resources {
-            srcDirs = ["src/main/resources"]
-           
+            srcDirs = ['src/main/resources', 'src/client/resources']
         }
     }
 }

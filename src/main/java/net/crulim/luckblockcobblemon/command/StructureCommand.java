@@ -9,6 +9,7 @@ public class StructureCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("spawnluckornot")
+                .requires(source -> source.hasPermissionLevel(2))
                 .executes(context -> {
                     ServerCommandSource source = context.getSource();
                     StructureSpawner.spawnLuckOrNot(source.getWorld(), source.getPlayer());
