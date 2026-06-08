@@ -1,0 +1,194 @@
+{
+  "configVersion": 2,
+  "_comment": "GLOBAL themed Lucky Block pool for type: fly. This is the public/default distribution for the mod and is NOT Kanto-only.",
+  "_note": [
+    "This default file keeps the same active event pattern and chances from the legacy themed config.",
+    "The pokemon/pokemons list controls exactly which species can spawn from this themed block.",
+    "Set chance to 0 to disable an event. If all chances are 0, nothing will run."
+  ],
+  "events": [
+    {
+      "type": "pokemon",
+      "pokemons": [
+        "pidgey",
+        "pidgeotto",
+        "pidgeot",
+        "spearow",
+        "fearow",
+        "zubat",
+        "golbat",
+        "farfetchd",
+        "doduo",
+        "dodrio",
+        "scyther",
+        "gyarados",
+        "aerodactyl",
+        "articuno",
+        "zapdos",
+        "moltres",
+        "dragonite",
+        "hoothoot",
+        "noctowl",
+        "crobat",
+        "natu",
+        "xatu",
+        "murkrow",
+        "gligar",
+        "delibird",
+        "skarmory",
+        "lugia",
+        "hooh",
+        "tropius",
+        "salamence",
+        "altaria",
+        "rayquaza",
+        "staraptor",
+        "drifblim",
+        "honchkrow",
+        "togekiss",
+        "yanmega",
+        "gliscor",
+        "braviary",
+        "mandibuzz",
+        "noivern",
+        "yveltal",
+        "corviknight",
+        "talonflame",
+        "rookidee",
+        "corvisquire",
+        "noibat",
+        "flapple",
+        "dragapult",
+        "kilowattrel",
+        "bombirdier",
+        "ironjugulis",
+        "roaringmoon"
+      ],
+      "shinyChance": 10,
+      "chance": 85
+    },
+    {
+      "type": "item",
+      "items": [
+        "cobblemon:sharp_beak",
+        "cobblemon:air_balloon",
+        "cobblemon:dragon_fang",
+        "cobblemon:float_stone",
+        "minecraft:ender_pearl",
+        "cobblemon:flying_gem",
+        "cobblemon:dragon_gem"
+      ],
+      "min": 1,
+      "max": 1,
+      "chance": 15
+    }
+  ],
+  "timeLeveling": [
+    {
+      "minDays": 0,
+      "maxDays": 25,
+      "levels": [
+        {
+          "min": 1,
+          "max": 12,
+          "chance": 90.0
+        },
+        {
+          "min": 13,
+          "max": 16,
+          "chance": 9.0
+        },
+        {
+          "min": 17,
+          "max": 20,
+          "chance": 1.0
+        }
+      ]
+    },
+    {
+      "minDays": 26,
+      "maxDays": 50,
+      "levels": [
+        {
+          "min": 1,
+          "max": 35,
+          "chance": 60.0
+        },
+        {
+          "min": 36,
+          "max": 45,
+          "chance": 30.0
+        },
+        {
+          "min": 46,
+          "max": 55,
+          "chance": 10.0
+        }
+      ]
+    },
+    {
+      "minDays": 51,
+      "maxDays": 100,
+      "levels": [
+        {
+          "min": 30,
+          "max": 60,
+          "chance": 50.0
+        },
+        {
+          "min": 61,
+          "max": 65,
+          "chance": 35.0
+        },
+        {
+          "min": 66,
+          "max": 70,
+          "chance": 15.0
+        }
+      ]
+    },
+    {
+      "minDays": 101,
+      "maxDays": 99999,
+      "levels": [
+        {
+          "min": 40,
+          "max": 80,
+          "chance": 60.0
+        },
+        {
+          "min": 81,
+          "max": 85,
+          "chance": 30.0
+        },
+        {
+          "min": 86,
+          "max": 90,
+          "chance": 10.0
+        }
+      ]
+    }
+  ],
+  "levelWeighting": [
+    {
+      "min": 85,
+      "max": 100,
+      "chance": 5.0
+    },
+    {
+      "min": 60,
+      "max": 84,
+      "chance": 15.0
+    },
+    {
+      "min": 30,
+      "max": 59,
+      "chance": 30.0
+    },
+    {
+      "min": 1,
+      "max": 29,
+      "chance": 50.0
+    }
+  ]
+}

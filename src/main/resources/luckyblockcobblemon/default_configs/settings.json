@@ -1,0 +1,25 @@
+{
+  "configVersion": 2,
+  "_comment": "Main Lucky Block Cobblemon settings. New configs live in config/luckyblockcobblemon/. These are the global public defaults, not a Kanto/server-safe preset.",
+  "_note": [
+    "enablePocketRecipe: enables/disables the recipe for luck_block_pocket.",
+    "enableVanillaRecipe: enables/disables the recipe for luck_block_vanilla.",
+    "enablePocketWorldgen: enables/disables natural generation of themed Lucky Blocks in new chunks.",
+    "enableStructureWorldgen: enables/disables natural structure generation from this mod in new chunks.",
+    "enableStructureEvents: allows structure events inside Lucky Block pools. If false, structure events will not run even if they exist in a pool.",
+    "strictConfigEvents: if true, Lucky Blocks only execute valid events from the loaded config and never use hidden fallback events.",
+    "breakCreativeDefaultLuckyBlock: controls whether the default Lucky Block triggers in Creative Mode.",
+    "breakCreativeThemedLuckyBlocks: controls whether themed Lucky Blocks trigger in Creative Mode.",
+    "breakCreativeLegendaryLuckyBlock: controls whether the Legendary Lucky Block triggers in Creative Mode.",
+    "Recipe changes require /reload or a server restart. Worldgen changes require a server restart and only affect new chunks."
+  ],
+  "enablePocketRecipe": true,
+  "enableVanillaRecipe": true,
+  "enablePocketWorldgen": true,
+  "enableStructureWorldgen": true,
+  "enableStructureEvents": true,
+  "strictConfigEvents": true,
+  "breakCreativeDefaultLuckyBlock": false,
+  "breakCreativeThemedLuckyBlocks": false,
+  "breakCreativeLegendaryLuckyBlock": false
+}

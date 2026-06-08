@@ -1,0 +1,308 @@
+{
+  "configVersion": 2,
+  "_comment": "GLOBAL themed Lucky Block pool for type: water. This is the public/default distribution for the mod and is NOT Kanto-only.",
+  "_note": [
+    "This default file keeps the same active event pattern and chances from the legacy themed config.",
+    "The pokemon/pokemons list controls exactly which species can spawn from this themed block.",
+    "Set chance to 0 to disable an event. If all chances are 0, nothing will run."
+  ],
+  "events": [
+    {
+      "type": "pokemon",
+      "pokemons": [
+        "squirtle",
+        "wartortle",
+        "blastoise",
+        "psyduck",
+        "golduck",
+        "poliwag",
+        "poliwhirl",
+        "poliwrath",
+        "tentacool",
+        "tentacruel",
+        "slowpoke",
+        "slowbro",
+        "seel",
+        "dewgong",
+        "shellder",
+        "cloyster",
+        "krabby",
+        "kingler",
+        "horsea",
+        "seadra",
+        "kingdra",
+        "goldeen",
+        "seaking",
+        "staryu",
+        "starmie",
+        "magikarp",
+        "gyarados",
+        "lapras",
+        "vaporeon",
+        "totodile",
+        "croconaw",
+        "feraligatr",
+        "chinchou",
+        "lanturn",
+        "marill",
+        "azumarill",
+        "wooper",
+        "quagsire",
+        "corsola",
+        "remoraid",
+        "octillery",
+        "mantine",
+        "mantyke",
+        "mudkip",
+        "marshtomp",
+        "swampert",
+        "lotad",
+        "lombre",
+        "ludicolo",
+        "wingull",
+        "pelipper",
+        "carvanha",
+        "sharpedo",
+        "wailmer",
+        "wailord",
+        "barboach",
+        "whiscash",
+        "corphish",
+        "crawdaunt",
+        "feebas",
+        "milotic",
+        "spheal",
+        "sealeo",
+        "walrein",
+        "clamperl",
+        "huntail",
+        "gorebyss",
+        "relicanth",
+        "luvdisc",
+        "piplup",
+        "prinplup",
+        "empoleon",
+        "buizel",
+        "floatzel",
+        "shellos",
+        "gastrodon",
+        "finneon",
+        "lumineon",
+        "palkia",
+        "phione",
+        "manaphy",
+        "oshawott",
+        "dewott",
+        "samurott",
+        "panpour",
+        "simipour",
+        "tympole",
+        "palpitoad",
+        "seismitoad",
+        "basculin",
+        "tirtouga",
+        "carracosta",
+        "ducklett",
+        "swanna",
+        "frillish",
+        "jellicent",
+        "alomomola",
+        "keldeo",
+        "froakie",
+        "frogadier",
+        "greninja",
+        "clauncher",
+        "clawitzer",
+        "popplio",
+        "brionne",
+        "primarina",
+        "wishiwashi",
+        "dewpider",
+        "araquanid",
+        "bruxish",
+        "sobble",
+        "drizzile",
+        "inteleon",
+        "arrokuda",
+        "barraskewda",
+        "cramorant",
+        "chewtle",
+        "drednaw",
+        "cufant",
+        "copperajah",
+        "arctovish",
+        "dracovish",
+        "eiscue",
+        "kubfu",
+        "urshifu",
+        "basculegion",
+        "quaxly",
+        "quaxwell",
+        "quaquaval",
+        "dewgong",
+        "cloyster",
+        "jynx",
+        "lapras",
+        "articuno",
+        "sneasel",
+        "swinub",
+        "piloswine",
+        "delibird",
+        "smoochum",
+        "snorunt",
+        "glalie",
+        "spheal",
+        "sealeo",
+        "walrein",
+        "regice",
+        "glaceon",
+        "mamoswine",
+        "froslass",
+        "vanillite",
+        "vanillish",
+        "vanilluxe",
+        "cubchoo",
+        "beartic",
+        "cryogonal",
+        "kyurem",
+        "amaura",
+        "aurorus",
+        "bergmite",
+        "avalugg",
+        "crabominable",
+        "eiscue",
+        "arctozolt",
+        "arctovish",
+        "mrrime",
+        "glastrier",
+        "cetoddle",
+        "cetitan",
+        "chien_pao"
+      ],
+      "shinyChance": 10,
+      "chance": 85
+    },
+    {
+      "type": "item",
+      "items": [
+        "cobblemon:mystic_water",
+        "cobblemon:water_stone",
+        "cobblemon:icy_rock",
+        "cobblemon:never_melt_ice",
+        "cobblemon:water_gem",
+        "cobblemon:ice_gem"
+      ],
+      "min": 1,
+      "max": 1,
+      "chance": 15
+    }
+  ],
+  "timeLeveling": [
+    {
+      "minDays": 0,
+      "maxDays": 25,
+      "levels": [
+        {
+          "min": 1,
+          "max": 12,
+          "chance": 90.0
+        },
+        {
+          "min": 13,
+          "max": 16,
+          "chance": 9.0
+        },
+        {
+          "min": 17,
+          "max": 20,
+          "chance": 1.0
+        }
+      ]
+    },
+    {
+      "minDays": 26,
+      "maxDays": 50,
+      "levels": [
+        {
+          "min": 1,
+          "max": 35,
+          "chance": 60.0
+        },
+        {
+          "min": 36,
+          "max": 45,
+          "chance": 30.0
+        },
+        {
+          "min": 46,
+          "max": 55,
+          "chance": 10.0
+        }
+      ]
+    },
+    {
+      "minDays": 51,
+      "maxDays": 100,
+      "levels": [
+        {
+          "min": 30,
+          "max": 60,
+          "chance": 50.0
+        },
+        {
+          "min": 61,
+          "max": 65,
+          "chance": 35.0
+        },
+        {
+          "min": 66,
+          "max": 70,
+          "chance": 15.0
+        }
+      ]
+    },
+    {
+      "minDays": 101,
+      "maxDays": 99999,
+      "levels": [
+        {
+          "min": 40,
+          "max": 80,
+          "chance": 60.0
+        },
+        {
+          "min": 81,
+          "max": 85,
+          "chance": 30.0
+        },
+        {
+          "min": 86,
+          "max": 90,
+          "chance": 10.0
+        }
+      ]
+    }
+  ],
+  "levelWeighting": [
+    {
+      "min": 85,
+      "max": 100,
+      "chance": 5.0
+    },
+    {
+      "min": 60,
+      "max": 84,
+      "chance": 15.0
+    },
+    {
+      "min": 30,
+      "max": 59,
+      "chance": 30.0
+    },
+    {
+      "min": 1,
+      "max": 29,
+      "chance": 50.0
+    }
+  ]
+}
