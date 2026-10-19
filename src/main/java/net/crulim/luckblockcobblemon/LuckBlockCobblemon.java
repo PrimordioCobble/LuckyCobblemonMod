@@ -109,4 +109,4 @@ public class LuckBlockCobblemon implements ModInitializer {
 				)
 		);
 	}
-}
+}
