@@ -48,7 +48,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,7 +61,8 @@ public final class AlphaLuckEvent {
     public static final String EVENT_TYPE = "alpha_cobblemonp";
 
     private static final String REWARD_TAG = "luckblockcobblemon_alpha";
-    private static final Set<String> EXCLUDED_LABELS = Set.of("legendary", "mythical", "ultra_beast", "paradox", "restricted", "baby");
+    /** Default for "excludeLabels" (randomSpecies). Configurable per event in the pool JSON. */
+    private static final List<String> DEFAULT_EXCLUDED_LABELS = List.of("legendary", "mythical", "ultra_beast", "paradox", "restricted", "baby");
     private static final RandomSource random = RandomSource.create();
     private static final Map<UUID, Encounter> ACTIVE = new ConcurrentHashMap<>();
 
@@ -129,11 +129,13 @@ public final class AlphaLuckEvent {
         int radius = getInt(data, "announceRadius", 48);
         Player nearest = world.getNearestPlayer(spawnPos.x, spawnPos.y, spawnPos.z, radius, false);
 
+        // scaleWithParty: follow the strongest Pokemon of the nearest player's party (+ partyLevelBonus).
+        // Without a party (or with scaleWithParty false) the pool level + levelBonus is used.
         int level = Math.max(1, baseLevel) + getInt(data, "levelBonus", 5);
         if (getBoolean(data, "scaleWithParty", true) && nearest instanceof ServerPlayer serverPlayer) {
             int partyLevel = highestPartyLevel(serverPlayer);
             if (partyLevel > 0) {
-                level = Math.max(level, partyLevel + getInt(data, "partyLevelBonus", 3));
+                level = partyLevel + getInt(data, "partyLevelBonus", 3);
             }
         }
         level = Mth.clamp(level, 1, getInt(data, "maxLevelCap", 100));
@@ -210,6 +212,9 @@ public final class AlphaLuckEvent {
 
         int minBaseStatTotal = getInt(data, "minBaseStatTotal", 470);
         List<String> typeFilter = CobblemonRewards.readStringList(data, "speciesTypes");
+        List<String> excludedLabels = data.has("excludeLabels")
+                ? CobblemonRewards.readStringList(data, "excludeLabels")
+                : DEFAULT_EXCLUDED_LABELS;
         List<Species> candidates = new ArrayList<>();
         for (Species species : PokemonSpecies.getImplemented()) {
             if (species == null || !species.getEvolutions().isEmpty()) {
@@ -217,7 +222,7 @@ public final class AlphaLuckEvent {
             }
             boolean excluded = false;
             for (String label : species.getLabels()) {
-                if (EXCLUDED_LABELS.contains(label)) {
+                if (label != null && excludedLabels.contains(label.toLowerCase(Locale.ROOT))) {
                     excluded = true;
                     break;
                 }
@@ -411,11 +416,12 @@ public final class AlphaLuckEvent {
     }
 
     private static void onCaptured(PokemonCapturedEvent event) {
-        // Capturing keeps the Alpha itself as the prize: no extra reward, just clear the tag.
+        // Capturing the Alpha gives the same single reward as defeating it.
         Pokemon pokemon = event.getPokemon();
-        if (pokemon != null) {
-            pokemon.getPersistentData().remove(REWARD_TAG);
+        if (pokemon == null || !pokemon.getPersistentData().contains(REWARD_TAG)) {
+            return;
         }
+        grantReward(event.getPlayer(), pokemon, true);
     }
 
     private static void onBattleVictory(BattleVictoryEvent event) {
@@ -432,7 +438,7 @@ public final class AlphaLuckEvent {
 
                 for (BattleActor winner : event.getWinners()) {
                     if (winner instanceof PlayerBattleActor playerActor && playerActor.getEntity() != null) {
-                        grantReward(playerActor.getEntity(), pokemon);
+                        grantReward(playerActor.getEntity(), pokemon, false);
                         break;
                     }
                 }
@@ -441,10 +447,9 @@ public final class AlphaLuckEvent {
     }
 
     /**
-     * Defeat reward: exactly ONE reward, picked by weight between gems, TM, gem block and bonus item.
-     * The *Chance fields of "rewards" are used as weights.
+     * Pays the Alpha reward once (the tag is removed first): ONE reward on defeat, full loot on capture.
      */
-    private static void grantReward(ServerPlayer player, Pokemon pokemon) {
+    private static void grantReward(ServerPlayer player, Pokemon pokemon, boolean captured) {
         CompoundTag tag = pokemon.getPersistentData().getCompound(REWARD_TAG);
         pokemon.getPersistentData().remove(REWARD_TAG);
         if (player == null) {
@@ -473,6 +478,32 @@ public final class AlphaLuckEvent {
                 ? rewards.getAsJsonArray("bonusItems")
                 : null;
 
+        List<ItemStack> loot = captured
+                ? captureLoot(rewards, gemTypes, tmTypes, bonusItems)
+                : List.of(defeatReward(rewards, gemTypes, tmTypes, bonusItems));
+
+        MutableComponent message = Component.translatable(captured ? "luckblockcobblemon.alpha.reward.captured" : "luckblockcobblemon.alpha.reward.defeated", pokemon.getDisplayName(false))
+                .withStyle(ChatFormatting.GOLD);
+        boolean first = true;
+        for (ItemStack stack : loot) {
+            if (stack.isEmpty()) {
+                continue;
+            }
+            message.append(Component.literal((first ? " " : ", ") + stack.getCount() + "x ").withStyle(ChatFormatting.GRAY));
+            message.append(stack.getHoverName().copy().withStyle(ChatFormatting.AQUA));
+            player.getInventory().placeItemBackInInventory(stack);
+            first = false;
+        }
+
+        player.displayClientMessage(message, false);
+        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 0.8F, 1.0F);
+    }
+
+    /**
+     * Defeat: exactly ONE reward. The *Chance values of "rewards" are used as weights.
+     * (Defeating also gives Cobblemon's normal ground drops, so this is kept small to avoid farming.)
+     */
+    private static ItemStack defeatReward(JsonObject rewards, List<String> gemTypes, List<String> tmTypes, JsonArray bonusItems) {
         float gemWeight = gemTypes.isEmpty() ? 0F : Math.max(0F, getFloat(rewards, "gemChance", 50F));
         float tmWeight = Math.max(0F, getFloat(rewards, "tmChance", 40F));
         float blockWeight = gemTypes.isEmpty() ? 0F : Math.max(0F, getFloat(rewards, "gemBlockChance", 10F));
@@ -483,8 +514,7 @@ public final class AlphaLuckEvent {
         if (total > 0F) {
             float roll = random.nextFloat() * total;
             if ((roll -= gemWeight) < 0F) {
-                int amount = CobblemonRewards.randomBetween(getInt(rewards, "gemMin", 3), getInt(rewards, "gemMax", 6));
-                reward = CobblemonRewards.gemStack(gemTypes.get(random.nextInt(gemTypes.size())), amount);
+                reward = gemReward(rewards, gemTypes);
             } else if ((roll -= tmWeight) < 0F) {
                 reward = CobblemonRewards.randomTm(tmTypes);
             } else if ((roll -= blockWeight) < 0F) {
@@ -496,17 +526,33 @@ public final class AlphaLuckEvent {
         if (reward.isEmpty() && !gemTypes.isEmpty()) {
             reward = CobblemonRewards.gemStack(gemTypes.get(0), Math.max(1, getInt(rewards, "gemMin", 3)));
         }
+        return reward;
+    }
 
-        MutableComponent message = Component.translatable("luckblockcobblemon.alpha.reward.defeated", pokemon.getDisplayName(false))
-                .withStyle(ChatFormatting.GOLD);
-        if (!reward.isEmpty()) {
-            message.append(Component.literal(" " + reward.getCount() + "x ").withStyle(ChatFormatting.GRAY));
-            message.append(reward.getHoverName().copy().withStyle(ChatFormatting.AQUA));
-            player.getInventory().placeItemBackInInventory(reward);
+    /**
+     * Capture: full loot. Type Gems always (gemMin-gemMax), plus independent rolls (in %) for
+     * a TM (tmChance), a Gem Block (gemBlockChance) and a bonus item (bonusChance).
+     */
+    private static List<ItemStack> captureLoot(JsonObject rewards, List<String> gemTypes, List<String> tmTypes, JsonArray bonusItems) {
+        List<ItemStack> loot = new ArrayList<>();
+        if (!gemTypes.isEmpty()) {
+            loot.add(gemReward(rewards, gemTypes));
         }
+        if (CobblemonRewards.roll(getFloat(rewards, "tmChance", 40F))) {
+            loot.add(CobblemonRewards.randomTm(tmTypes));
+        }
+        if (!gemTypes.isEmpty() && CobblemonRewards.roll(getFloat(rewards, "gemBlockChance", 10F))) {
+            loot.add(CobblemonRewards.gemBlockStack(gemTypes.get(0)));
+        }
+        if (bonusItems != null && CobblemonRewards.roll(getFloat(rewards, "bonusChance", 30F))) {
+            loot.add(CobblemonRewards.randomItemFrom(bonusItems, 1));
+        }
+        return loot;
+    }
 
-        player.displayClientMessage(message, false);
-        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 0.8F, 1.0F);
+    private static ItemStack gemReward(JsonObject rewards, List<String> gemTypes) {
+        int amount = CobblemonRewards.randomBetween(getInt(rewards, "gemMin", 3), getInt(rewards, "gemMax", 6));
+        return CobblemonRewards.gemStack(gemTypes.get(random.nextInt(gemTypes.size())), amount);
     }
 
     private static String normalizeSpeciesName(String input) {

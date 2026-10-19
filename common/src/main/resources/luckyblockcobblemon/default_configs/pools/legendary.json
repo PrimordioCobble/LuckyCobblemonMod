@@ -133,7 +133,7 @@
       "maxLevel": 100
     }
   ],
-  "__note_bonusDrops": "Cobblemon 1.8 tribute: extra Type Gems of the legendary's types and a chance of a matching TM.",
+  "__note_bonusDrops": "Cobblemon 1.8 tribute: extra Type Gems of the legendary's types and a chance of a matching TM. enabled: false turns it off. chance = % of legendary blocks that give the bonus. gemMin/gemMax = amount of gems. tmChance = % chance of also dropping a TM of the legendary's types.",
   "bonusDrops": {
     "enabled": true,
     "chance": 100,

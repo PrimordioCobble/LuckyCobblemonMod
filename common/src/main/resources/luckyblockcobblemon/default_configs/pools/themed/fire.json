@@ -103,7 +103,7 @@
     {
       "type": "alpha_cobblemonp",
       "upgradeId": "0.2.0_alpha_awakening",
-      "__note": "Alpha Awakening (Cobblemon 1.8). Spawns an Alpha with a boss bar and a herd of its pre-evolutions. Defeat it to earn ONE reward (gems, TM, gem block or bonus item, using the *Chance values as weights). Never runs from locked-tier blocks.",
+      "__note": "Alpha Awakening (Cobblemon 1.8). Spawns an Alpha with a boss bar and a herd of its pre-evolutions. Defeat it for ONE reward (gems, TM, gem block or bonus item, *Chance values used as weights) or capture it for the full loot (gems always + each *Chance rolled as a %). Never runs from locked-tier blocks.",
       "chance": 1.5,
       "pokemons": [
         "charizard",

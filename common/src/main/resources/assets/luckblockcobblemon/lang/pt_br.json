@@ -1,7 +1,8 @@
 {
   "luckblockcobblemon.alpha.title": "UM ALFA DESPERTOU!",
   "luckblockcobblemon.alpha.subtitle": "%s · Nv. %s",
-  "luckblockcobblemon.alpha.announce": "⚠ Um %s Alfa saiu do Lucky Block! Derrote-o para ganhar uma recompensa.",
+  "luckblockcobblemon.alpha.announce": "⚠ Um %s Alfa saiu do Lucky Block! Derrote-o ou capture-o para ganhar uma recompensa.",
   "luckblockcobblemon.alpha.bossbar": "%s Alfa · Nv. %s",
-  "luckblockcobblemon.alpha.reward.defeated": "Você derrotou o %s Alfa! Recompensa:"
+  "luckblockcobblemon.alpha.reward.defeated": "Você derrotou o %s Alfa! Recompensa:",
+  "luckblockcobblemon.alpha.reward.captured": "Você capturou o %s Alfa! Recompensas:"
 }

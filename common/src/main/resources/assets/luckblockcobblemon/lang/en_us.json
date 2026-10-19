@@ -102,7 +102,8 @@
   "block.luckblockcobblemon.luck_block_pocket_fairy_locked_t10": "Locked Pocket Lucky Block (Fairy + Ghost + Poison) - Tier 10",
   "luckblockcobblemon.alpha.title": "ALPHA AWAKENED!",
   "luckblockcobblemon.alpha.subtitle": "%s · Lv. %s",
-  "luckblockcobblemon.alpha.announce": "⚠ An Alpha %s burst out of the Lucky Block! Defeat it to earn a reward.",
+  "luckblockcobblemon.alpha.announce": "⚠ An Alpha %s burst out of the Lucky Block! Defeat or capture it to earn a reward.",
   "luckblockcobblemon.alpha.bossbar": "Alpha %s · Lv. %s",
-  "luckblockcobblemon.alpha.reward.defeated": "You defeated the Alpha %s! Reward:"
+  "luckblockcobblemon.alpha.reward.defeated": "You defeated the Alpha %s! Reward:",
+  "luckblockcobblemon.alpha.reward.captured": "You captured the Alpha %s! Rewards:"
 }

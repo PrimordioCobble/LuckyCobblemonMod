@@ -92,18 +92,25 @@ public class ReadmeGenerator {
 
                 Event type alpha_cobblemonp (default pool and themed pools):
                 - Spawns an Alpha Pokemon with a dramatic entrance, a boss bar and an optional herd.
-                - Defeating the Alpha gives ONE reward: Type Gems, a TM, a Gem Block or a bonus item.
-                  Capturing it gives no extra reward (the Alpha itself is the prize).
+                - Defeating the Alpha gives ONE reward (Type Gems, a TM, a Gem Block or a bonus item),
+                  because Cobblemon already drops its normal loot on the ground.
+                - Capturing the Alpha gives the full loot: Type Gems always, plus a TM, a Gem Block and
+                  a bonus item, each rolled with its own chance.
                 - Locked-tier Lucky Blocks (/luckyblockgive) NEVER run Alpha events.
                 - Disable globally with enableAlphaEvents: false in settings.json.
                 Main fields:
-                - pokemons: species list, or randomSpecies: true (final evolutions, no legendaries,
+                - pokemons: species list, or randomSpecies: true (final evolutions only,
                   minBaseStatTotal filter, optional speciesTypes filter).
-                - levelBonus, scaleWithParty, partyLevelBonus, maxLevelCap, shinyChance.
+                - excludeLabels: species labels never picked by randomSpecies
+                  (default: legendary, mythical, ultra_beast, paradox, restricted, baby; [] = allow all).
+                - scaleWithParty: true = level of the strongest Pokemon in the nearest player's party
+                  + partyLevelBonus (0 = same level). Without a party: pool level + levelBonus.
+                - maxLevelCap, shinyChance.
                 - announceRadius, bossBar, bossBarSeconds.
                 - herd: { min, max, levelOffsetMin, levelOffsetMax } (followers use the Alpha's pre-evolutions).
                 - rewards: { gemChance, gemMin, gemMax, gemTypes, gemBlockChance, tmChance, tmTypes, bonusItems, bonusChance }.
-                  The *Chance values are weights used to pick the single reward.
+                  On defeat the *Chance values are weights used to pick the single reward.
+                  On capture they are independent % chances (gems are always given).
                   Empty gemTypes/tmTypes use the Alpha's own types.
 
                 Event type tm:
@@ -112,6 +119,8 @@ public class ReadmeGenerator {
 
                 legendary.json bonusDrops:
                 - { enabled, chance, gemMin, gemMax, tmChance } extra Type Gems/TM of the legendary's types.
+                  enabled: false turns it off; chance is the % of legendary blocks that give the bonus;
+                  tmChance is the % chance of also getting a TM of the legendary's types.
 
                 Automatic upgrades:
                 - autoUpgradePools: true appends new events (marked with upgradeId) to pools that already
@@ -149,7 +158,7 @@ public class ReadmeGenerator {
 
     private static boolean isCurrent(Path readme) {
         try {
-            return Files.readString(readme, StandardCharsets.UTF_8).contains("ONE reward");
+            return Files.readString(readme, StandardCharsets.UTF_8).contains("Capturing the Alpha gives the full loot");
         } catch (IOException e) {
             return true;
         }
