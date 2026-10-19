@@ -9,6 +9,8 @@ import com.cobblemon.mod.common.api.moves.MoveTemplate;
 import com.google.gson.*;
 import net.crulim.luckblockcobblemon.config.LuckyBlockConfigManager;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
+import net.crulim.luckblockcobblemon.config.PoolUpgrader;
+import net.crulim.luckblockcobblemon.util.CobblemonRewards;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -103,6 +105,13 @@ public class LuckyBlockHandlerPocket {
             );
 
             remove150kCelebrationEventIfPresent(LuckyBlockConfigManager.defaultPoolFile().toFile(), json);
+            PoolUpgrader.upgrade(
+                    LuckyBlockConfigManager.defaultPoolFile(),
+                    json,
+                    "luckyblockcobblemon/default_configs/pools/default.json",
+                    PoolUpgrader.DEFAULT_ALLITEMS_ADDITIONS,
+                    List.of()
+            );
 
 
             JsonArray poolArray = LuckyBlockConfigManager.getEvents(json);
@@ -383,7 +392,8 @@ public class LuckyBlockHandlerPocket {
             return;
         }
 
-        List<JsonObject> validPool = filterValidEvents();
+        boolean lockedTier = forcedMinLevel > 0 && forcedMaxLevel > 0;
+        List<JsonObject> validPool = filterValidEvents(lockedTier);
         if (validPool.isEmpty()) {
             System.out.println("[LuckyBlockPocket] No valid events to pick from!");
             return;
@@ -454,7 +464,7 @@ public class LuckyBlockHandlerPocket {
         return true;
     }
 
-    private static List<JsonObject> filterValidEvents() {
+    private static List<JsonObject> filterValidEvents(boolean lockedTier) {
         List<JsonObject> valid = new ArrayList<>();
 
         for (JsonObject event : luckPool) {
@@ -486,6 +496,13 @@ public class LuckyBlockHandlerPocket {
                     }
                 }
                 case "multi_cobblemonp" -> valid.add(event);
+                case "tm" -> valid.add(event);
+                case AlphaLuckEvent.EVENT_TYPE -> {
+                    // Locked-tier blocks are preset adventure content: the Alpha boss never runs from them.
+                    if (!lockedTier && AlphaLuckEvent.isEnabled()) {
+                        valid.add(event);
+                    }
+                }
                 default -> System.out.println("[LuckyBlockPocket] Unknown type ignored in filter: " + type);
             }
         }
@@ -543,7 +560,27 @@ public class LuckyBlockHandlerPocket {
             case "structure" -> spawnStructure(world, pos, data);
             case "multi_cobblemonp" -> spawnMultipleCobblemons(world, pos, data);
             case "cobblemon_allitems" -> dropCobblemonAllItems(world, pos, data);
+            case "tm" -> CobblemonRewards.dropRandomTms(world, pos, data, List.of());
+            case AlphaLuckEvent.EVENT_TYPE -> spawnAlpha(world, pos, data);
             default -> System.out.println("[LuckyBlockPocket] Unknown luck type: " + type);
+        }
+    }
+
+    private static void spawnAlpha(ServerWorld world, BlockPos pos, JsonObject data) {
+        int baseLevel;
+        int minLevelLocal = data.has("minLevel") ? data.get("minLevel").getAsInt() : 0;
+        int maxLevelLocal = data.has("maxLevel") ? data.get("maxLevel").getAsInt() : 0;
+        if (minLevelLocal > 0 && maxLevelLocal > 0) {
+            baseLevel = randomLevelBetween(minLevelLocal, maxLevelLocal);
+        } else if (!timeBasedLeveling.isEmpty()) {
+            int timeBased = getTimeBasedLevel(world);
+            baseLevel = (timeBased > 0) ? timeBased : getWeightedRandomLevel();
+        } else {
+            baseLevel = getWeightedRandomLevel();
+        }
+
+        if (!AlphaLuckEvent.spawn(world, pos, data, "default", baseLevel)) {
+            System.out.println("[LuckyBlockPocket] Alpha event could not run.");
         }
     }
 

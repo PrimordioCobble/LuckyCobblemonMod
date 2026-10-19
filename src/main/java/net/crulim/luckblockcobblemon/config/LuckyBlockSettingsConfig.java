@@ -20,6 +20,8 @@ public final class LuckyBlockSettingsConfig {
     private static boolean enableStructureWorldgen = true;
     private static boolean enableStructureEvents = true;
     private static boolean strictConfigEvents = true;
+    private static boolean enableAlphaEvents = true;
+    private static boolean autoUpgradePools = true;
 
     private static boolean breakCreativeDefaultLuckyBlock = false;
     private static boolean breakCreativeThemedLuckyBlocks = false;
@@ -44,6 +46,8 @@ public final class LuckyBlockSettingsConfig {
             enableStructureWorldgen = getBoolean(json, "enableStructureWorldgen", true);
             enableStructureEvents = getBoolean(json, "enableStructureEvents", true);
             strictConfigEvents = getBoolean(json, "strictConfigEvents", true);
+            enableAlphaEvents = getBoolean(json, "enableAlphaEvents", true);
+            autoUpgradePools = getBoolean(json, "autoUpgradePools", true);
 
             breakCreativeDefaultLuckyBlock = getBoolean(json, "breakCreativeDefaultLuckyBlock", getLegacyBreakCreativeFromDefaultPool(false));
             breakCreativeThemedLuckyBlocks = getBoolean(json, "breakCreativeThemedLuckyBlocks", getLegacyBreakCreativeFromThemedConfig(false));
@@ -56,6 +60,8 @@ public final class LuckyBlockSettingsConfig {
                     + ", enableStructureWorldgen=" + enableStructureWorldgen
                     + ", enableStructureEvents=" + enableStructureEvents
                     + ", strictConfigEvents=" + strictConfigEvents
+                    + ", enableAlphaEvents=" + enableAlphaEvents
+                    + ", autoUpgradePools=" + autoUpgradePools
                     + ", breakCreativeDefaultLuckyBlock=" + breakCreativeDefaultLuckyBlock
                     + ", breakCreativeThemedLuckyBlocks=" + breakCreativeThemedLuckyBlocks
                     + ", breakCreativeLegendaryLuckyBlock=" + breakCreativeLegendaryLuckyBlock);
@@ -67,6 +73,8 @@ public final class LuckyBlockSettingsConfig {
             enableStructureWorldgen = false;
             enableStructureEvents = false;
             strictConfigEvents = true;
+            enableAlphaEvents = true;
+            autoUpgradePools = false;
             breakCreativeDefaultLuckyBlock = false;
             breakCreativeThemedLuckyBlocks = false;
             breakCreativeLegendaryLuckyBlock = false;
@@ -97,6 +105,14 @@ public final class LuckyBlockSettingsConfig {
         return strictConfigEvents;
     }
 
+    public static boolean areAlphaEventsEnabled() {
+        return enableAlphaEvents;
+    }
+
+    public static boolean isAutoUpgradePoolsEnabled() {
+        return autoUpgradePools;
+    }
+
     public static boolean isDefaultLuckyBlockBreakCreativeAllowed() {
         return breakCreativeDefaultLuckyBlock;
     }
@@ -121,6 +137,8 @@ public final class LuckyBlockSettingsConfig {
             case "enableStructureWorldgen" -> enableStructureWorldgen;
             case "enableStructureEvents" -> enableStructureEvents;
             case "strictConfigEvents" -> strictConfigEvents;
+            case "enableAlphaEvents" -> enableAlphaEvents;
+            case "autoUpgradePools" -> autoUpgradePools;
             default -> false;
         };
     }
@@ -162,6 +180,14 @@ public final class LuckyBlockSettingsConfig {
         }
         if (!json.has("strictConfigEvents")) {
             json.addProperty("strictConfigEvents", true);
+            changed = true;
+        }
+        if (!json.has("enableAlphaEvents")) {
+            json.addProperty("enableAlphaEvents", true);
+            changed = true;
+        }
+        if (!json.has("autoUpgradePools")) {
+            json.addProperty("autoUpgradePools", true);
             changed = true;
         }
         if (!json.has("breakCreativeDefaultLuckyBlock")) {
@@ -207,6 +233,8 @@ public final class LuckyBlockSettingsConfig {
         note.add("enableStructureWorldgen: enables/disables natural structure generation from this mod in new chunks.");
         note.add("enableStructureEvents: allows structure events inside Lucky Block pools.");
         note.add("strictConfigEvents: if true, Lucky Blocks only execute valid events from the loaded config and never use hidden fallback events.");
+        note.add("enableAlphaEvents: enables/disables the Alpha Awakening events (alpha_cobblemonp). Locked-tier blocks never run them.");
+        note.add("autoUpgradePools: if true, new mod content (events marked with upgradeId) is appended once to existing pool files. A .bak copy is kept.");
         note.add("Recipe changes require /reload or a server restart. Worldgen changes require a server restart and only affect new chunks.");
         json.add("_note", note);
 
@@ -216,6 +244,8 @@ public final class LuckyBlockSettingsConfig {
         json.addProperty("enableStructureWorldgen", true);
         json.addProperty("enableStructureEvents", true);
         json.addProperty("strictConfigEvents", true);
+        json.addProperty("enableAlphaEvents", true);
+        json.addProperty("autoUpgradePools", true);
         json.addProperty("breakCreativeDefaultLuckyBlock", false);
         json.addProperty("breakCreativeThemedLuckyBlocks", false);
         json.addProperty("breakCreativeLegendaryLuckyBlock", false);

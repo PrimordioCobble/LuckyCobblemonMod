@@ -6,6 +6,7 @@ import net.crulim.luckblockcobblemon.command.LuckyBlockLocateCommand;
 import net.crulim.luckblockcobblemon.block.ModBlocks;
 import net.crulim.luckblockcobblemon.config.LockedLuckyBlockTierConfig;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
+import net.crulim.luckblockcobblemon.handler.AlphaLuckEvent;
 import net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerPocket;
 import net.crulim.luckblockcobblemon.handler.LuckyBlockHandlerVanilla;
 import net.crulim.luckblockcobblemon.handler.PocketLuckHandler;
@@ -61,6 +62,7 @@ public class LuckBlockCobblemon implements ModInitializer {
 		PocketLuckHandler.loadConfig();
 
 		ReadmeGenerator.generateReadmeIfMissing();
+		AlphaLuckEvent.init();
 
 		if (LuckyBlockSettingsConfig.isPocketWorldgenEnabled()) {
 			BiomeModifications.addFeature(
@@ -107,4 +109,4 @@ public class LuckBlockCobblemon implements ModInitializer {
 				)
 		);
 	}
-}
+}

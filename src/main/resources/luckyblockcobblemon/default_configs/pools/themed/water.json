@@ -195,6 +195,142 @@
       "min": 1,
       "max": 1,
       "chance": 15
+    },
+    {
+      "type": "alpha_cobblemonp",
+      "upgradeId": "0.2.0_alpha_awakening",
+      "__note": "Alpha Awakening (Cobblemon 1.8). Spawns an Alpha with a boss bar and a herd of its pre-evolutions. Defeat it to earn ONE reward (gems, TM, gem block or bonus item, using the *Chance values as weights). Never runs from locked-tier blocks.",
+      "chance": 1.5,
+      "pokemons": [
+        "blastoise",
+        "golduck",
+        "poliwrath",
+        "tentacruel",
+        "slowbro",
+        "dewgong",
+        "cloyster",
+        "kingler",
+        "kingdra",
+        "starmie",
+        "gyarados",
+        "lapras",
+        "vaporeon",
+        "feraligatr",
+        "octillery",
+        "mantine",
+        "swampert",
+        "ludicolo",
+        "wailord",
+        "milotic",
+        "walrein",
+        "huntail",
+        "gorebyss",
+        "relicanth",
+        "empoleon",
+        "floatzel",
+        "gastrodon",
+        "samurott",
+        "simipour",
+        "seismitoad",
+        "carracosta",
+        "swanna",
+        "jellicent",
+        "alomomola",
+        "greninja",
+        "clawitzer",
+        "primarina",
+        "bruxish",
+        "inteleon",
+        "barraskewda",
+        "cramorant",
+        "drednaw",
+        "copperajah",
+        "arctovish",
+        "dracovish",
+        "eiscue",
+        "basculegion",
+        "quaquaval",
+        "glalie",
+        "glaceon",
+        "mamoswine",
+        "froslass",
+        "vanilluxe",
+        "beartic",
+        "cryogonal",
+        "aurorus",
+        "avalugg",
+        "crabominable",
+        "arctozolt",
+        "mrrime",
+        "cetitan"
+      ],
+      "levelBonus": 5,
+      "scaleWithParty": true,
+      "partyLevelBonus": 3,
+      "maxLevelCap": 100,
+      "shinyChance": 2.0,
+      "announceRadius": 48,
+      "bossBar": true,
+      "bossBarSeconds": 600,
+      "herd": {
+        "min": 2,
+        "max": 4,
+        "levelOffsetMin": -15,
+        "levelOffsetMax": -5
+      },
+      "rewards": {
+        "gemChance": 50,
+        "gemMin": 3,
+        "gemMax": 6,
+        "gemTypes": [],
+        "gemBlockChance": 10,
+        "tmChance": 40,
+        "tmTypes": [],
+        "bonusItems": [
+          "cobblemon:blank_tm",
+          "cobblemon:rare_candy",
+          "cobblemon:exp_candy_l"
+        ],
+        "bonusChance": 30
+      }
+    },
+    {
+      "type": "item",
+      "upgradeId": "0.2.0_type_gems",
+      "__note": "Cobblemon 1.8 Type Gems and Gem Clusters of this block's types (TM crafting).",
+      "items": [
+        "cobblemon:water_gem",
+        "cobblemon:ice_gem",
+        "cobblemon:water_gem_cluster",
+        "cobblemon:ice_gem_cluster"
+      ],
+      "min": 2,
+      "max": 5,
+      "chance": 4
+    },
+    {
+      "type": "item",
+      "upgradeId": "0.2.0_type_gem_block",
+      "__note": "Rare: Type Gem Block of this block's types.",
+      "items": [
+        "cobblemon:water_gem_block",
+        "cobblemon:ice_gem_block"
+      ],
+      "min": 1,
+      "max": 1,
+      "chance": 0.5
+    },
+    {
+      "type": "tm",
+      "upgradeId": "0.2.0_type_tm",
+      "__note": "Random TM of this block's types (Cobblemon 1.8).",
+      "tmTypes": [
+        "water",
+        "ice"
+      ],
+      "min": 1,
+      "max": 1,
+      "chance": 2
     }
   ],
   "timeLeveling": [
@@ -304,5 +440,8 @@
       "max": 29,
       "chance": 50.0
     }
+  ],
+  "appliedUpgrades": [
+    "0.2.0"
   ]
-}
+}

@@ -132,5 +132,16 @@
       "minLevel": 81,
       "maxLevel": 100
     }
+  ],
+  "__note_bonusDrops": "Cobblemon 1.8 tribute: extra Type Gems of the legendary's types and a chance of a matching TM.",
+  "bonusDrops": {
+    "enabled": true,
+    "chance": 100,
+    "gemMin": 2,
+    "gemMax": 4,
+    "tmChance": 35
+  },
+  "appliedUpgrades": [
+    "0.2.0"
   ]
-}
+}

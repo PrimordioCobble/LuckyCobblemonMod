@@ -51,7 +51,7 @@
     {
       "type": "structure",
       "__note": "Structure event. Add structures using 'id' and 'weight'. Higher weight = more frequent. Use this to spawn special buildings.",
-      "chance": 1.0,
+      "chance": 6.25,
       "structures": [
         {
           "id": "luckblockcobblemon:eletric_boss",
@@ -459,11 +459,165 @@
         "cobblemon:revive",
         "cobblemon:super_potion",
         "cobblemon:superb_remedy",
-        "cobblemon:zinc"
+        "cobblemon:zinc",
+        "cobblemon:blank_tm",
+        "cobblemon:tm_machine",
+        "cobblemon:deepslate_crystal_core",
+        "cobblemon:normal_gem_cluster",
+        "cobblemon:fire_gem_cluster",
+        "cobblemon:water_gem_cluster",
+        "cobblemon:electric_gem_cluster",
+        "cobblemon:grass_gem_cluster",
+        "cobblemon:ice_gem_cluster",
+        "cobblemon:fighting_gem_cluster",
+        "cobblemon:poison_gem_cluster",
+        "cobblemon:ground_gem_cluster",
+        "cobblemon:flying_gem_cluster",
+        "cobblemon:psychic_gem_cluster",
+        "cobblemon:bug_gem_cluster",
+        "cobblemon:rock_gem_cluster",
+        "cobblemon:ghost_gem_cluster",
+        "cobblemon:dragon_gem_cluster",
+        "cobblemon:dark_gem_cluster",
+        "cobblemon:steel_gem_cluster",
+        "cobblemon:fairy_gem_cluster",
+        "cobblemon:voltaconia",
+        "cobblemon:verdroot",
+        "cobblemon:mistleaf",
+        "cobblemon:lucibell",
+        "cobblemon:pomohana",
+        "cobblemon:pauvillea",
+        "cobblemon:lobaila",
+        "cobblemon:wistensu",
+        "cobblemon:disc_shelf",
+        "cobblemon:white_plaque",
+        "cobblemon:light_gray_plaque",
+        "cobblemon:gray_plaque",
+        "cobblemon:black_plaque",
+        "cobblemon:brown_plaque",
+        "cobblemon:red_plaque",
+        "cobblemon:orange_plaque",
+        "cobblemon:yellow_plaque",
+        "cobblemon:lime_plaque",
+        "cobblemon:green_plaque",
+        "cobblemon:cyan_plaque",
+        "cobblemon:light_blue_plaque",
+        "cobblemon:blue_plaque",
+        "cobblemon:purple_plaque",
+        "cobblemon:magenta_plaque",
+        "cobblemon:pink_plaque"
       ],
       "min": 1,
       "max": 1,
       "chance": 4.5
+    },
+    {
+      "type": "alpha_cobblemonp",
+      "upgradeId": "0.2.0_alpha_awakening",
+      "__note": "Alpha Awakening (Cobblemon 1.8). Spawns an Alpha with a boss bar and a herd of its pre-evolutions. Defeat it to earn ONE reward (gems, TM, gem block or bonus item, using the *Chance values as weights). Never runs from locked-tier blocks.",
+      "chance": 1.5,
+      "randomSpecies": true,
+      "minBaseStatTotal": 470,
+      "speciesTypes": [],
+      "minLevel": 0,
+      "maxLevel": 0,
+      "levelBonus": 5,
+      "scaleWithParty": true,
+      "partyLevelBonus": 3,
+      "maxLevelCap": 100,
+      "shinyChance": 1.0,
+      "announceRadius": 48,
+      "bossBar": true,
+      "bossBarSeconds": 600,
+      "herd": {
+        "min": 2,
+        "max": 4,
+        "levelOffsetMin": -15,
+        "levelOffsetMax": -5
+      },
+      "rewards": {
+        "gemChance": 50,
+        "gemMin": 3,
+        "gemMax": 6,
+        "gemTypes": [],
+        "gemBlockChance": 10,
+        "tmChance": 40,
+        "tmTypes": [],
+        "bonusItems": [
+          "cobblemon:blank_tm",
+          "cobblemon:rare_candy",
+          "cobblemon:exp_candy_l"
+        ],
+        "bonusChance": 30
+      }
+    },
+    {
+      "type": "tm",
+      "upgradeId": "0.2.0_tm_drop",
+      "__note": "Random Technical Machine (Cobblemon 1.8). tmTypes empty = any type.",
+      "tmTypes": [],
+      "min": 1,
+      "max": 1,
+      "chance": 2
+    },
+    {
+      "type": "cobbleitem",
+      "upgradeId": "0.2.0_tm_materials",
+      "__note": "Cobblemon 1.8 TM crafting materials: Type Gem Clusters and Blank TMs.",
+      "items": [
+        "cobblemon:normal_gem_cluster",
+        "cobblemon:fire_gem_cluster",
+        "cobblemon:water_gem_cluster",
+        "cobblemon:electric_gem_cluster",
+        "cobblemon:grass_gem_cluster",
+        "cobblemon:ice_gem_cluster",
+        "cobblemon:fighting_gem_cluster",
+        "cobblemon:poison_gem_cluster",
+        "cobblemon:ground_gem_cluster",
+        "cobblemon:flying_gem_cluster",
+        "cobblemon:psychic_gem_cluster",
+        "cobblemon:bug_gem_cluster",
+        "cobblemon:rock_gem_cluster",
+        "cobblemon:ghost_gem_cluster",
+        "cobblemon:dragon_gem_cluster",
+        "cobblemon:dark_gem_cluster",
+        "cobblemon:steel_gem_cluster",
+        "cobblemon:fairy_gem_cluster",
+        "cobblemon:blank_tm"
+      ],
+      "min": 1,
+      "max": 3,
+      "chance": 3
+    },
+    {
+      "type": "cobbleitem",
+      "upgradeId": "0.2.0_tm_station",
+      "__note": "Rare Cobblemon 1.8 crafting blocks: TM Machine and Deepslate Crystal Core (grows Type Gems).",
+      "items": [
+        "cobblemon:tm_machine",
+        "cobblemon:deepslate_crystal_core"
+      ],
+      "min": 1,
+      "max": 1,
+      "chance": 0.115
+    },
+    {
+      "type": "cobbleitem",
+      "upgradeId": "0.2.0_flora",
+      "__note": "Cobblemon 1.8 plants: Terrain Plants and Oricorio Flowers.",
+      "items": [
+        "cobblemon:voltaconia",
+        "cobblemon:verdroot",
+        "cobblemon:mistleaf",
+        "cobblemon:lucibell",
+        "cobblemon:pomohana",
+        "cobblemon:pauvillea",
+        "cobblemon:lobaila",
+        "cobblemon:wistensu"
+      ],
+      "min": 1,
+      "max": 2,
+      "chance": 0.34
     }
   ],
   "shinyChancePercent": 0.02,
@@ -576,5 +730,8 @@
         }
       ]
     }
+  ],
+  "appliedUpgrades": [
+    "0.2.0"
   ]
-}
+}

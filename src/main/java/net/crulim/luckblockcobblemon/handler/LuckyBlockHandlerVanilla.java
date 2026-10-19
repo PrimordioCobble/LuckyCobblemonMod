@@ -13,6 +13,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.crulim.luckblockcobblemon.config.LuckyBlockConfigManager;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
+import net.crulim.luckblockcobblemon.config.PoolUpgrader;
+import net.crulim.luckblockcobblemon.util.CobblemonRewards;
+import net.minecraft.block.Block;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -91,6 +95,39 @@ public class LuckyBlockHandlerVanilla {
             System.out.println("[LuckyBlockLegendary] Failed to spawn: " + speciesName);
         } else {
             System.out.println("[LuckyBlockLegendary] Spawned: " + speciesName + " lvl " + level + " shiny: " + isShiny);
+            dropBonusRewards(world, pos, pokemon);
+        }
+    }
+
+    /**
+     * Optional "bonusDrops" block in legendary.json: Type Gems of the legendary's types and, by chance, a matching TM.
+     */
+    private static void dropBonusRewards(ServerWorld world, BlockPos pos, Pokemon pokemon) {
+        if (loadedConfig == null || !loadedConfig.has("bonusDrops") || !loadedConfig.get("bonusDrops").isJsonObject()) {
+            return;
+        }
+
+        JsonObject bonus = loadedConfig.getAsJsonObject("bonusDrops");
+        if (bonus.has("enabled") && !bonus.get("enabled").getAsBoolean()) {
+            return;
+        }
+        if (!CobblemonRewards.roll(bonus.has("chance") ? bonus.get("chance").getAsFloat() : 100F)) {
+            return;
+        }
+
+        List<String> types = CobblemonRewards.typesOf(pokemon);
+        int gemMin = bonus.has("gemMin") ? bonus.get("gemMin").getAsInt() : 2;
+        int gemMax = bonus.has("gemMax") ? bonus.get("gemMax").getAsInt() : 4;
+        for (ItemStack gems : CobblemonRewards.gemStacks(types, CobblemonRewards.randomBetween(gemMin, gemMax))) {
+            Block.dropStack(world, pos.up(), gems);
+        }
+
+        float tmChance = bonus.has("tmChance") ? bonus.get("tmChance").getAsFloat() : 50F;
+        if (CobblemonRewards.roll(tmChance)) {
+            ItemStack tm = CobblemonRewards.randomTm(types);
+            if (!tm.isEmpty()) {
+                Block.dropStack(world, pos.up(), tm);
+            }
         }
     }
 
@@ -105,6 +142,13 @@ public class LuckyBlockHandlerVanilla {
                     LuckyBlockConfigManager.legendaryPoolFile(),
                     LuckyBlockConfigManager.legacyLegendaryPoolFile(),
                     LuckyBlockHandlerVanilla::createDefaultConfig
+            );
+            PoolUpgrader.upgrade(
+                    LuckyBlockConfigManager.legendaryPoolFile(),
+                    json,
+                    "luckyblockcobblemon/default_configs/pools/legendary.json",
+                    List.of(),
+                    List.of("bonusDrops")
             );
             loadedConfig = json;
 

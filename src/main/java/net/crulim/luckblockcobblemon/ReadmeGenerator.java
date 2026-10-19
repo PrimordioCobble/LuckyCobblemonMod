@@ -15,7 +15,7 @@ public class ReadmeGenerator {
         LuckyBlockConfigManager.ensureDirectories();
 
         Path readme = LuckyBlockConfigManager.rootDir().resolve("README.txt");
-        if (Files.exists(readme)) {
+        if (Files.exists(readme) && isCurrent(readme)) {
             return;
         }
 
@@ -88,6 +88,35 @@ public class ReadmeGenerator {
                 - Finds Lucky Blocks in loaded chunks.
                 - Requires admin/operator permission.
 
+                ALPHA AWAKENING (Cobblemon 1.8+):
+
+                Event type alpha_cobblemonp (default pool and themed pools):
+                - Spawns an Alpha Pokemon with a dramatic entrance, a boss bar and an optional herd.
+                - Defeating the Alpha gives ONE reward: Type Gems, a TM, a Gem Block or a bonus item.
+                  Capturing it gives no extra reward (the Alpha itself is the prize).
+                - Locked-tier Lucky Blocks (/luckyblockgive) NEVER run Alpha events.
+                - Disable globally with enableAlphaEvents: false in settings.json.
+                Main fields:
+                - pokemons: species list, or randomSpecies: true (final evolutions, no legendaries,
+                  minBaseStatTotal filter, optional speciesTypes filter).
+                - levelBonus, scaleWithParty, partyLevelBonus, maxLevelCap, shinyChance.
+                - announceRadius, bossBar, bossBarSeconds.
+                - herd: { min, max, levelOffsetMin, levelOffsetMax } (followers use the Alpha's pre-evolutions).
+                - rewards: { gemChance, gemMin, gemMax, gemTypes, gemBlockChance, tmChance, tmTypes, bonusItems, bonusChance }.
+                  The *Chance values are weights used to pick the single reward.
+                  Empty gemTypes/tmTypes use the Alpha's own types.
+
+                Event type tm:
+                - Drops random Technical Machines. tmTypes filters by type (themed pools use the block types
+                  when empty, the default pool uses any type). min/max control the amount.
+
+                legendary.json bonusDrops:
+                - { enabled, chance, gemMin, gemMax, tmChance } extra Type Gems/TM of the legendary's types.
+
+                Automatic upgrades:
+                - autoUpgradePools: true appends new events (marked with upgradeId) to pools that already
+                  exist, only once per version. A copy named *.pre-<version>.bak is kept.
+
                 Legacy compatibility:
 
                 Older config files are still supported when the new files do not exist yet.
@@ -115,6 +144,14 @@ public class ReadmeGenerator {
             System.out.println("[LuckyBlockCobblemon] Generated config/luckyblockcobblemon/README.txt");
         } catch (IOException e) {
             System.out.println("[LuckyBlockCobblemon] Failed to generate config README: " + e.getMessage());
+        }
+    }
+
+    private static boolean isCurrent(Path readme) {
+        try {
+            return Files.readString(readme, StandardCharsets.UTF_8).contains("ONE reward");
+        } catch (IOException e) {
+            return true;
         }
     }
 }

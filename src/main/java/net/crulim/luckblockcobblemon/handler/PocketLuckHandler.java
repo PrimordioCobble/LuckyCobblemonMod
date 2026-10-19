@@ -12,6 +12,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.crulim.luckblockcobblemon.config.LuckyBlockConfigManager;
 import net.crulim.luckblockcobblemon.config.LuckyBlockSettingsConfig;
+import net.crulim.luckblockcobblemon.config.PoolUpgrader;
+import net.crulim.luckblockcobblemon.util.CobblemonRewards;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -85,7 +87,15 @@ public class PocketLuckHandler {
             return;
         }
 
-        List<JsonObject> pool = POOLS.getOrDefault(type, Collections.emptyList());
+        boolean lockedTier = forcedMinLevel > 0 && forcedMaxLevel > 0;
+        List<JsonObject> pool = new ArrayList<>();
+        for (JsonObject event : POOLS.getOrDefault(type, Collections.emptyList())) {
+            // Locked-tier blocks are preset adventure content: the Alpha boss never runs from them.
+            if (AlphaLuckEvent.isAlphaEvent(event) && (lockedTier || !AlphaLuckEvent.isEnabled())) {
+                continue;
+            }
+            pool.add(event);
+        }
         if (pool.isEmpty()) {
             System.out.println("[PocketLuckHandler] Themed pool is empty: " + type);
             return;
@@ -106,16 +116,30 @@ public class PocketLuckHandler {
         switch (eventType) {
             case "item" -> dropItems(world, pos, eventToExecute);
             case "pokemon" -> spawnPokemon(world, pos, eventToExecute, type);
+            case "tm" -> CobblemonRewards.dropRandomTms(world, pos, eventToExecute, CobblemonRewards.themedTypes(type));
+            case AlphaLuckEvent.EVENT_TYPE -> {
+                if (!AlphaLuckEvent.spawn(world, pos, eventToExecute, type, getEffectiveLevel(world, type, eventToExecute))) {
+                    System.out.println("[PocketLuckHandler] Alpha event could not run for themed pool: " + type);
+                }
+            }
             default -> System.out.println("[PocketLuckHandler] Unknown event type ignored: " + eventType);
         }
     }
 
     private static JsonObject loadOrCreateRoot(String type) {
-        return LuckyBlockConfigManager.loadPoolObjectWithLegacyMigration(
+        JsonObject root = LuckyBlockConfigManager.loadPoolObjectWithLegacyMigration(
                 LuckyBlockConfigManager.themedPoolFile(type),
                 LuckyBlockConfigManager.legacyThemedPoolFile(type),
                 () -> createDefaultPool(type)
         );
+        PoolUpgrader.upgrade(
+                LuckyBlockConfigManager.themedPoolFile(type),
+                root,
+                "luckyblockcobblemon/default_configs/pools/themed/" + LuckyBlockConfigManager.toThemedType(type) + ".json",
+                List.of(),
+                List.of()
+        );
+        return root;
     }
 
     private static List<JsonObject> readValidPool(JsonObject root) {
@@ -150,6 +174,8 @@ public class PocketLuckHandler {
         return switch (type) {
             case "item" -> event.has("items") && event.get("items").isJsonArray() && !event.getAsJsonArray("items").isEmpty();
             case "pokemon" -> getPokemonArray(event) != null && !getPokemonArray(event).isEmpty();
+            case "tm" -> true;
+            case AlphaLuckEvent.EVENT_TYPE -> getPokemonArray(event) != null && !getPokemonArray(event).isEmpty();
             default -> false;
         };
     }

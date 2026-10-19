@@ -37,7 +37,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     modImplementation("com.cobblemon:fabric:${project.cobblemon_version}")
-    implementation("com.cobblemon:fabric:1.7.0+1.21.1-SNAPSHOT:sources@jar")
+    implementation("com.cobblemon:fabric:${project.cobblemon_version}:sources@jar")
     implementation "org.jetbrains.kotlin:kotlin-reflect:2.2.21"
     implementation 'com.google.code.gson:gson:2.10.1'
 }

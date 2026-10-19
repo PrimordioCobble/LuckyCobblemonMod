@@ -99,5 +99,10 @@
   "block.luckblockcobblemon.luck_block_pocket_fairy_locked_t7": "Locked Pocket Lucky Block (Fairy + Ghost + Poison) - Tier 7",
   "block.luckblockcobblemon.luck_block_pocket_fairy_locked_t8": "Locked Pocket Lucky Block (Fairy + Ghost + Poison) - Tier 8",
   "block.luckblockcobblemon.luck_block_pocket_fairy_locked_t9": "Locked Pocket Lucky Block (Fairy + Ghost + Poison) - Tier 9",
-  "block.luckblockcobblemon.luck_block_pocket_fairy_locked_t10": "Locked Pocket Lucky Block (Fairy + Ghost + Poison) - Tier 10"
-}
+  "block.luckblockcobblemon.luck_block_pocket_fairy_locked_t10": "Locked Pocket Lucky Block (Fairy + Ghost + Poison) - Tier 10",
+  "luckblockcobblemon.alpha.title": "ALPHA AWAKENED!",
+  "luckblockcobblemon.alpha.subtitle": "%s · Lv. %s",
+  "luckblockcobblemon.alpha.announce": "⚠ An Alpha %s burst out of the Lucky Block! Defeat it to earn a reward.",
+  "luckblockcobblemon.alpha.bossbar": "Alpha %s · Lv. %s",
+  "luckblockcobblemon.alpha.reward.defeated": "You defeated the Alpha %s! Reward:"
+}
