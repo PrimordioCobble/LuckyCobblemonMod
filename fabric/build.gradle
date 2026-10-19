@@ -1,0 +1,93 @@
+plugins {
+    id 'fabric-loom' version '1.10-SNAPSHOT'
+    id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version '2.2.21'
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0"
+    }
+}
+
+evaluationDependsOn(':common')
+
+base {
+    archivesName = "${rootProject.archives_base_name}-fabric-${rootProject.minecraft_version}"
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    maven { url = 'https://maven.teamresourceful.com/repository/maven-public/' }
+    maven { url = 'https://maven.impactdev.net/repository/development/' }
+}
+
+fabricApi {
+    configureDataGeneration {
+        client = true
+    }
+}
+
+loom {
+    runs {
+        client { runDir = '../run' }
+        server { runDir = '../run/server' }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "com.cobblemon:fabric:${project.cobblemon_version}"
+    implementation 'org.jetbrains.kotlin:kotlin-reflect:2.2.21'
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Lets the IDE resolve the common classes; the sources are compiled below.
+    compileOnly project(':common')
+}
+
+// The common code is compiled together with the Fabric code so Loom remaps it for the Fabric JAR.
+tasks.named('compileJava', JavaCompile) {
+    source(project(':common').sourceSets.main.allSource)
+}
+
+tasks.named('sourcesJar', Jar) {
+    from(project(':common').sourceSets.main.allSource)
+}
+
+processResources {
+    filteringCharset = 'UTF-8'
+    from(project(':common').sourceSets.main.resources)
+    inputs.property 'version', project.version
+
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    from(rootProject.file('LICENSE')) {
+        rename { "LICENSE_${rootProject.archives_base_name}" }
+    }
+}
+
+publishing {
+    publications {
+        create('mavenJava', MavenPublication) {
+            artifactId = "${rootProject.archives_base_name}-fabric"
+            from components.java
+        }
+    }
+}

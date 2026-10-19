@@ -1,0 +1,38 @@
+// Loader-independent code. Compiled against vanilla Minecraft with Mojang (official) mappings
+// and the Cobblemon API. The fabric and neoforge modules compile these sources into their own JARs.
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+base {
+    archivesName = "${rootProject.archives_base_name}-common"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    neoFormVersion = project.neoform_version
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.teamresourceful.com/repository/maven-public/' }
+    exclusiveContent {
+        forRepository {
+            maven { url = 'https://api.modrinth.com/maven' }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    // Cobblemon API (same classes on both loaders; only used for compiling)
+    compileOnly "maven.modrinth:MdwFAVRL:${project.cobblemon_neoforge_modrinth_version}"
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:2.2.21'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}

@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="[2,)"
+license="CC0-1.0"
+
+[[mods]]
+modId="luckblockcobblemon"
+version="${mod_version}"
+displayName="Lucky Block Cobblemon"
+authors="SLIM"
+description="Lucky Blocks for Cobblemon: Pokémon, items, structures and Alpha encounters, fully configurable through JSON."
+logoFile="assets/luckblockcobblemon/icon.png"
+
+[[dependencies.luckblockcobblemon]]
+modId="neoforge"
+type="required"
+versionRange="[21.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.luckblockcobblemon]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.luckblockcobblemon]]
+modId="cobblemon"
+type="required"
+versionRange="[1.8.0,)"
+ordering="AFTER"
+side="BOTH"

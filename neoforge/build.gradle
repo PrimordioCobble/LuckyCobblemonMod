@@ -1,0 +1,86 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+evaluationDependsOn(':common')
+
+base {
+    archivesName = "${rootProject.archives_base_name}-neoforge-${rootProject.minecraft_version}"
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+java {
+    withSourcesJar()
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.teamresourceful.com/repository/maven-public/' }
+    maven { url = 'https://thedarkcolour.github.io/KotlinForForge/' }
+    exclusiveContent {
+        forRepository {
+            maven { url = 'https://api.modrinth.com/maven' }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+dependencies {
+    implementation "maven.modrinth:MdwFAVRL:${project.cobblemon_neoforge_modrinth_version}"
+    implementation "thedarkcolour:kotlinforforge-neoforge:${project.kotlinforforge_version}"
+
+    // Lets the IDE resolve the common classes; the sources are compiled below.
+    compileOnly project(':common')
+}
+
+neoForge {
+    version = project.neoforge_version
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run')
+        }
+        server {
+            server()
+            gameDirectory = project.file('run/server')
+            programArgument '--nogui'
+        }
+    }
+    mods {
+        luckblockcobblemon {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+// The common code is compiled together with the NeoForge code into the NeoForge JAR.
+tasks.named('compileJava', JavaCompile) {
+    source(project(':common').sourceSets.main.allSource)
+}
+
+tasks.named('sourcesJar', Jar) {
+    from(project(':common').sourceSets.main.allSource)
+}
+
+processResources {
+    filteringCharset = 'UTF-8'
+    from(project(':common').sourceSets.main.resources)
+    inputs.property 'mod_version', project.version
+
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand 'mod_version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    from(rootProject.file('LICENSE')) {
+        rename { "LICENSE_${rootProject.archives_base_name}" }
+    }
+}

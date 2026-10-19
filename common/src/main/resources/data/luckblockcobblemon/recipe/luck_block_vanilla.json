@@ -1,0 +1,36 @@
+{
+    "fabric:load_conditions": [
+        {
+            "condition": "luckblockcobblemon:config_enabled",
+            "key": "enableVanillaRecipe"
+        }
+    ],
+    "neoforge:conditions": [
+        {
+            "type": "luckblockcobblemon:config_enabled",
+            "key": "enableVanillaRecipe"
+        }
+    ],
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "G": {
+            "item": "minecraft:gold_block"
+        },
+        "L": {
+            "item": "cobblemon:master_ball"
+        },
+        "B": {
+            "item": "luckblockcobblemon:luck_block_pocket"
+        }
+    },
+    "pattern": [
+        "GBG",
+        "BLB",
+        "GBG"
+    ],
+    "result": {
+        "id": "luckblockcobblemon:luck_block_vanilla",
+        "count": 1
+    }
+}
