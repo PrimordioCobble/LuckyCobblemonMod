@@ -1,8 +1,84 @@
 plugins {
     id 'base'
+    // Publishes the Fabric and NeoForge JARs to CurseForge and Modrinth with one changelog.
+    // 1.1.0 is the last version that supports Gradle 8 (2.x requires Gradle 9).
+    id 'me.modmuss50.mod-publish-plugin' version '1.1.0'
 }
 
 allprojects {
     group = rootProject.maven_group
     version = rootProject.mod_version
+}
+
+// ---------------------------------------------------------------------------
+// Publishing: ./gradlew publishMods
+// - Changelog: CHANGELOG.md (root of the project), used on every page.
+// - Tokens: environment variables CURSEFORGE_TOKEN and MODRINTH_TOKEN.
+//   Without both tokens, or with -PdryRun=true, nothing is uploaded (dry run).
+// ---------------------------------------------------------------------------
+evaluationDependsOn(':fabric')
+evaluationDependsOn(':neoforge')
+
+def fabricJar = project(':fabric').tasks.named('remapJar').flatMap { it.archiveFile }
+def neoforgeJar = project(':neoforge').tasks.named('jar').flatMap { it.archiveFile }
+def changelogText = rootProject.file('CHANGELOG.md').getText('UTF-8')
+def hasTokens = providers.environmentVariable('CURSEFORGE_TOKEN').isPresent() &&
+        providers.environmentVariable('MODRINTH_TOKEN').isPresent()
+def forceDryRun = providers.gradleProperty('dryRun').map { it.toBoolean() }.getOrElse(false)
+
+publishMods {
+    changelog = changelogText
+    type = STABLE
+    dryRun = forceDryRun || !hasTokens
+
+    def cfOptions = curseforgeOptions {
+        accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+        projectId = '1277120'
+        minecraftVersions.add(minecraft_version)
+        javaVersions.add(JavaVersion.VERSION_21)
+        clientRequired = true
+        serverRequired = true
+    }
+
+    def mrOptions = modrinthOptions {
+        accessToken = providers.environmentVariable('MODRINTH_TOKEN')
+        projectId = 'DAMBDZ9M'
+        minecraftVersions.add(minecraft_version)
+    }
+
+    curseforge('curseforgeFabric') {
+        from cfOptions
+        file = fabricJar
+        modLoaders.add('fabric')
+        version = "${mod_version}+fabric"
+        displayName = "Lucky Block Cobblemon ${mod_version} (Fabric)"
+        requires('cobblemon', 'fabric-api')
+    }
+
+    curseforge('curseforgeNeoForge') {
+        from cfOptions
+        file = neoforgeJar
+        modLoaders.add('neoforge')
+        version = "${mod_version}+neoforge"
+        displayName = "Lucky Block Cobblemon ${mod_version} (NeoForge)"
+        requires('cobblemon', 'kotlin-for-forge')
+    }
+
+    modrinth('modrinthFabric') {
+        from mrOptions
+        file = fabricJar
+        modLoaders.add('fabric')
+        version = "${mod_version}+fabric"
+        displayName = "Lucky Block Cobblemon ${mod_version} (Fabric)"
+        requires('cobblemon', 'fabric-api')
+    }
+
+    modrinth('modrinthNeoForge') {
+        from mrOptions
+        file = neoforgeJar
+        modLoaders.add('neoforge')
+        version = "${mod_version}+neoforge"
+        displayName = "Lucky Block Cobblemon ${mod_version} (NeoForge)"
+        requires('cobblemon', 'kotlin-for-forge')
+    }
 }

@@ -41,6 +41,18 @@ Note: Fabric Loom leaves Minecraft's client-only libraries (such as `icu4j`) out
 `:fabric:runServer`, and Cobblemon's battle engine (Showdown) needs it, so it may fail to start
 in the Fabric development server. This only affects the dev environment, not the built JAR.
 
+## Publishing (CurseForge + Modrinth)
+
+One command publishes both JARs to both sites, using `CHANGELOG.md` as the changelog:
+
+```text
+./gradlew publishMods
+```
+
+- Set the environment variables `CURSEFORGE_TOKEN` and `MODRINTH_TOKEN` first.
+- Without both tokens, or with `-PdryRun=true`, it only simulates (nothing is uploaded).
+- Before each release: update `mod_version` in `gradle.properties` and rewrite `CHANGELOG.md`.
+
 ## Requirements
 
 | | Fabric | NeoForge |
